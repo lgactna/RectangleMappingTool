@@ -55,6 +55,7 @@ from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 import sys
+import webbrowser
 #------
 from rectmap import Ui_MainWindow
 #------
@@ -221,8 +222,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
     def __init__(self):
         PyQt5.QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
-
-        self.saveAsActs = []
+        self.setWindowTitle("RectangleMappingTool")
 
         #self.scribbleArea = ScribbleArea()
         self.widget = ScribbleArea(self.widget)
@@ -231,10 +231,13 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
 
         self.pushButton.clicked.connect(self.adddata)
         self.pushButton_2.clicked.connect(self.removedata)
-        #self.createActions()
-        #self.createMenus()
 
-        #self.setWindowTitle("Scribble")
+        self.actionUndo.triggered.connect(self.undo)
+        self.actionPen_Color.triggered.connect(self.changePenColor)
+        self.actionPen_Width.triggered.connect(self.changePenWidth)
+        self.actionGitHub_Repository.triggered.connect(self.openGithub)
+        self.actionAbout.triggered.connect(self.about)
+
         #self.resize(500, 500)
     def adddata(self,coords):
         row_number = self.tableWidget.rowCount()+1
@@ -246,6 +249,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
 
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
         #should we? dunno
+        #but if so, perhaps consider an "intersects with" column
     def removedata(self):
         self.tableWidget.removeRow(3)
         del self.widget.rects[2]
@@ -254,15 +258,36 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         #print(self.widget.rects) #this gets our QRect objects, and we can just start getting data from here
         newrect = self.widget.rects[len(self.widget.rects)-1]
         self.adddata(newrect.getCoords())
+    #region Actions
+    def undo(self):
+        self.widget.undoLast()
+        #update table entries on undo
+    def changePenColor(self):
+        newColor = QColorDialog.getColor(self.widget.penColor())
+        if newColor.isValid():
+            self.widget.setPenColor(newColor)
+    def changePenWidth(self):
+        newWidth, ok = QInputDialog.getInt(self, "Set New Pen Width",
+                "Select pen width:", self.widget.penWidth(), 1, 50, 1)
+        if ok:
+            self.widget.setPenWidth(newWidth)
+    def about(self):
+        QMessageBox.about(self, "About RectangleMappingTool",
+                '<p>RectangleMappingTool is a program designed for the <a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, built with PyQt5 and packaged through fbs.</p>'
+                '<p>Its primary purpose is to make creating rectangular bounding regions based on an image easier.</p>'
+                '<p>You can view the source and of this program and additional information <a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
+    def openGithub(self):
+        webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
+    #endregion
 '''
     def closeEvent(self, event):
-        if self.maybeSave():
+        if self.savePrompt():
             event.accept()
         else:
             event.ignore()
 
     def open(self):
-        if self.maybeSave():
+        if self.savePrompt():
             fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
                     QDir.currentPath())
             if fileName:
@@ -273,101 +298,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         fileFormat = action.data()
         self.saveFile(fileFormat)
 
-    def undo(self):
-        self.scribbleArea.undoLast()
-
-    def penColor(self):
-        newColor = QColorDialog.getColor(self.scribbleArea.penColor())
-        if newColor.isValid():
-            self.scribbleArea.setPenColor(newColor)
-
-    def penWidth(self):
-        newWidth, ok = QInputDialog.getInt(self, "Scribble",
-                "Select pen width:", self.scribbleArea.penWidth(), 1, 50, 1)
-        if ok:
-            self.scribbleArea.setPenWidth(newWidth)
-
-    def about(self):
-        QMessageBox.about(self, "About Scribble",
-                "<p>The <b>Scribble</b> example shows how to use "
-                "QMainWindow as the base widget for an application, and how "
-                "to reimplement some of QWidget's event handlers to receive "
-                "the events generated for the application's widgets:</p>"
-                "<p> We reimplement the mouse event handlers to facilitate "
-                "drawing, the paint event handler to update the application "
-                "and the resize event handler to optimize the application's "
-                "appearance. In addition we reimplement the close event "
-                "handler to intercept the close events before terminating "
-                "the application.</p>"
-                "<p> The example also demonstrates how to use QPainter to "
-                "draw an image in real time, as well as to repaint "
-                "widgets.</p>")
-
-    def createActions(self):
-        self.openAct = QAction("&Open...", self, shortcut="Ctrl+O",
-                triggered=self.open)
-
-        for format in QImageWriter.supportedImageFormats():
-            format = str(format)
-
-            text = format.upper() + "..."
-
-            action = QAction(text, self, triggered=self.save)
-            action.setData(format)
-            self.saveAsActs.append(action)
-
-        self.printAct = QAction("&Print...", self,
-                triggered=self.scribbleArea.print_)
-
-        self.exitAct = QAction("E&xit", self, shortcut="Ctrl+Q",
-                triggered=self.close)
-
-        self.penColorAct = QAction("&Pen Color...", self,
-                triggered=self.penColor)
-
-        self.penWidthAct = QAction("Pen &Width...", self,
-                triggered=self.penWidth)
-
-        self.clearScreenAct = QAction("&Clear Screen", self, shortcut="Ctrl+L",
-                triggered=self.scribbleArea.clearImage)
-
-        self.undoAct = QAction("&Undo Last Rectangle", self, shortcut="Ctrl+Z",
-                triggered=self.undo)
-
-        self.aboutAct = QAction("&About", self, triggered=self.about)
-
-        self.aboutQtAct = QAction("About &Qt", self,
-                triggered=QApplication.instance().aboutQt)
-
-    def createMenus(self):
-        self.saveAsMenu = QMenu("&Save As", self)
-        for action in self.saveAsActs:
-            self.saveAsMenu.addAction(action)
-
-        fileMenu = QMenu("&File", self)
-        fileMenu.addAction(self.openAct)
-        fileMenu.addMenu(self.saveAsMenu)
-        fileMenu.addAction(self.undoAct)
-        fileMenu.addAction(self.printAct)
-
-        fileMenu.addSeparator()
-        fileMenu.addAction(self.exitAct)
-
-        optionMenu = QMenu("&Options", self)
-        optionMenu.addAction(self.penColorAct)
-        optionMenu.addAction(self.penWidthAct)
-        optionMenu.addSeparator()
-        optionMenu.addAction(self.clearScreenAct)
-
-        helpMenu = QMenu("&Help", self)
-        helpMenu.addAction(self.aboutAct)
-        helpMenu.addAction(self.aboutQtAct)
-
-        self.menuBar().addMenu(fileMenu)
-        self.menuBar().addMenu(optionMenu)
-        self.menuBar().addMenu(helpMenu)
-
-    def maybeSave(self):
+    def savePrompt(self):
         #just close w/out prompting user
         #comment below
         if self.scribbleArea.isModified():
@@ -394,11 +325,9 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         return False
     '''
 
-
 class AppContext(ApplicationContext):          
     def run(self):                              
         aw = ApplicationWindow()
-        aw.setWindowTitle("RectangleMappingTool")
         aw.show()
         return self.app.exec_()                 
 
