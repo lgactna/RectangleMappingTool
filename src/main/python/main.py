@@ -48,7 +48,7 @@
 
 #region imports
 import PyQt5
-from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt
+from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
         QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget)
@@ -63,7 +63,11 @@ imgpath = appctxt.get_resource('rovercourse.png')#gets relative/absolute path th
 #endregion imports
 
 class ScribbleArea(QWidget):
+    #this is a custom signal
+    #it must be a class variable; it won't work if placed in __init__
+    dataChanged = pyqtSignal()
     def __init__(self, parent=None):
+        
         super(ScribbleArea, self).__init__(parent)
         #super().__init__()
 
@@ -77,6 +81,8 @@ class ScribbleArea(QWidget):
         self.endPoint = QPoint()
         self.tempRect = None
         self.rects = []
+        #self.dataChanged = pyqtSignal()
+
 
         self.setStyleSheet = """
             background-image: url("rovercourse.png"); 
@@ -145,6 +151,7 @@ class ScribbleArea(QWidget):
             self.scribbling = False
             self.rects.append(QRect(self.startingPoint, self.endPoint))
             #here we should also add this data to the table and update it
+            self.dataChanged.emit() #this says that the rectangle data has changed
             self.drawallRects()
 
     def paintEvent(self, event):
@@ -229,12 +236,15 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         #self.scribbleArea = ScribbleArea()
         self.widget = ScribbleArea(self.widget)
         self.widget.resize(400,300)
-
+        self.widget.dataChanged.connect(self.getData)
         #self.createActions()
         #self.createMenus()
 
         #self.setWindowTitle("Scribble")
         #self.resize(500, 500)
+    def getData(self):
+        print(self.widget.rects) #this gets our QRect objects, and we can just start getting data from here
+        
 '''
     def closeEvent(self, event):
         if self.maybeSave():
