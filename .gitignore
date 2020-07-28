@@ -1,2 +1,4 @@
 /venv
 /fbs-0.8.7
+/target
+src/main/python/example.py
