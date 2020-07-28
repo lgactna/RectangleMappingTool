@@ -228,10 +228,10 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.setWindowTitle("RectangleMappingTool")
 
         #self.scribbleArea = ScribbleArea()
-        self.widget = ScribbleArea(self.widget)
-        self.widget.resize(400,300)
-        self.widget.dataChanged.connect(self.getData)
-        self.widget.posChanged.connect(self.updateCoords)
+        self.drawing_area = ScribbleArea(self.drawing_area)
+        self.drawing_area.resize(400,300)
+        self.drawing_area.dataChanged.connect(self.getData)
+        self.drawing_area.posChanged.connect(self.updateCoords)
 
         self.pushButton.clicked.connect(self.adddata)
         self.pushButton_2.clicked.connect(self.removedata)
@@ -244,39 +244,39 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
 
         #self.resize(500, 500)
     def adddata(self,coords):
-        row_number = self.tableWidget.rowCount()+1
-        self.tableWidget.setRowCount(row_number) 
-        self.tableWidget.setItem(row_number-1,0,QTableWidgetItem(str(coords[0])))
-        self.tableWidget.setItem(row_number-1,1,QTableWidgetItem(str(coords[1])))
-        self.tableWidget.setItem(row_number-1,2,QTableWidgetItem(str(coords[2])))
-        self.tableWidget.setItem(row_number-1,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
+        row_number = self.table_widget.rowCount()+1
+        self.table_widget.setRowCount(row_number) 
+        self.table_widget.setItem(row_number-1,0,QTableWidgetItem(str(coords[0])))
+        self.table_widget.setItem(row_number-1,1,QTableWidgetItem(str(coords[1])))
+        self.table_widget.setItem(row_number-1,2,QTableWidgetItem(str(coords[2])))
+        self.table_widget.setItem(row_number-1,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
 
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
         #should we? dunno
         #but if so, perhaps consider an "intersects with" column
     def removedata(self):
-        self.tableWidget.removeRow(3)
-        del self.widget.rects[2]
-        self.widget.drawallRects()
+        self.table_widget.removeRow(3)
+        del self.drawing_area.rects[2]
+        self.drawing_area.drawallRects()
     def getData(self):
-        #print(self.widget.rects) #this gets our QRect objects, and we can just start getting data from here
-        newrect = self.widget.rects[len(self.widget.rects)-1]
+        #print(self.drawing_area.rects) #this gets our QRect objects, and we can just start getting data from here
+        newrect = self.drawing_area.rects[len(self.drawing_area.rects)-1]
         self.adddata(newrect.getCoords())
     def updateCoords(self,x,y):
-        self.label.setText("x:"+str(x)+" y:"+str(y))
+        self.coord_label.setText("x:"+str(x)+" y:"+str(y))
     #region Actions
     def undo(self):
-        self.widget.undoLast()
+        self.drawing_area.undoLast()
         #update table entries on undo
     def changePenColor(self):
-        newColor = QColorDialog.getColor(self.widget.penColor())
+        newColor = QColorDialog.getColor(self.drawing_area.penColor())
         if newColor.isValid():
-            self.widget.setPenColor(newColor)
+            self.drawing_area.setPenColor(newColor)
     def changePenWidth(self):
         newWidth, ok = QInputDialog.getInt(self, "Set New Pen Width",
-                "Select pen width:", self.widget.penWidth(), 1, 50, 1)
+                "Select pen width:", self.drawing_area.penWidth(), 1, 50, 1)
         if ok:
-            self.widget.setPenWidth(newWidth)
+            self.drawing_area.setPenWidth(newWidth)
     def about(self):
         QMessageBox.about(self, "About RectangleMappingTool",
                 '<p>RectangleMappingTool is a program designed for the <a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, built with PyQt5 and packaged through fbs.</p>'

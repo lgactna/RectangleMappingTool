@@ -36,7 +36,7 @@
      </widget>
     </item>
     <item row="5" column="0" rowspan="2">
-     <widget class="QToolButton" name="toolButton">
+     <widget class="QToolButton" name="toggle_show_button">
       <property name="text">
        <string/>
       </property>
@@ -53,7 +53,7 @@
      </widget>
     </item>
     <item row="0" column="3" rowspan="4">
-     <widget class="QTableWidget" name="tableWidget">
+     <widget class="QTableWidget" name="table_widget">
       <attribute name="horizontalHeaderDefaultSectionSize">
        <number>100</number>
       </attribute>
@@ -118,7 +118,7 @@
      </spacer>
     </item>
     <item row="1" column="0" colspan="2">
-     <widget class="QWidget" name="widget" native="true">
+     <widget class="QWidget" name="drawing_area" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -163,7 +163,7 @@
      </widget>
     </item>
     <item row="2" column="0" colspan="2">
-     <widget class="QLabel" name="label">
+     <widget class="QLabel" name="coord_label">
       <property name="text">
        <string>x: 0 y: 0</string>
       </property>
