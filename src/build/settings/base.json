@@ -1,0 +1,6 @@
+{
+    "app_name": "RectangleMappingTool",
+    "author": "lgactna",
+    "main_module": "src/main/python/main.py",
+    "version": "0.0.0"
+}
