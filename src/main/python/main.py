@@ -67,6 +67,7 @@ class ScribbleArea(QWidget):
     #this is a custom signal
     #it must be a class variable; it won't work if placed in __init__
     dataChanged = pyqtSignal()
+    posChanged = pyqtSignal(int,int)
     def __init__(self, parent=None):
         
         super(ScribbleArea, self).__init__(parent)
@@ -81,6 +82,8 @@ class ScribbleArea(QWidget):
         self.startingPoint = QPoint()
         self.endPoint = QPoint()
         self.rects = []
+
+        self.setMouseTracking(True)
         #self.dataChanged = pyqtSignal()
 
     def openImage(self, fileName):
@@ -131,12 +134,12 @@ class ScribbleArea(QWidget):
             self.scribbling = True
 
     def mouseMoveEvent(self, event):
+        self.posChanged.emit(event.pos().x(),event.pos().y())
         if (event.buttons() & Qt.LeftButton) and self.scribbling:
             self.rects.append(QRect(self.startingPoint,event.pos()))
             self.drawallRects()
             del self.rects[-1]
             #we can update the table here if it's not too resource consuming
-    
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and self.scribbling:
             self.endPoint = event.pos()
@@ -228,6 +231,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.widget = ScribbleArea(self.widget)
         self.widget.resize(400,300)
         self.widget.dataChanged.connect(self.getData)
+        self.widget.posChanged.connect(self.updateCoords)
 
         self.pushButton.clicked.connect(self.adddata)
         self.pushButton_2.clicked.connect(self.removedata)
@@ -258,6 +262,8 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         #print(self.widget.rects) #this gets our QRect objects, and we can just start getting data from here
         newrect = self.widget.rects[len(self.widget.rects)-1]
         self.adddata(newrect.getCoords())
+    def updateCoords(self,x,y):
+        self.label.setText("x:"+str(x)+" y:"+str(y))
     #region Actions
     def undo(self):
         self.widget.undoLast()
