@@ -2,3 +2,5 @@
 /fbs-0.8.7
 /target
 src/main/python/example.py
+src/main/python/qttableex.py
+src/main/python/__pycache__

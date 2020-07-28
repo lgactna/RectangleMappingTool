@@ -47,6 +47,7 @@
 #endregion licensing
 
 #region imports
+import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
@@ -55,14 +56,18 @@ from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 import sys
 #------
-
+from rectmap import Ui_MainWindow
+#------
+appctxt = ApplicationContext()
+imgpath = appctxt.get_resource('rovercourse.png')#gets relative/absolute path through fbs
 #endregion imports
 
 class ScribbleArea(QWidget):
     def __init__(self, parent=None):
         super(ScribbleArea, self).__init__(parent)
+        #super().__init__()
 
-        self.setAttribute(Qt.WA_StaticContents)
+        #self.setAttribute(Qt.WA_StaticContents)
         self.modified = False
         self.scribbling = False
         self.myPenWidth = 1
@@ -131,6 +136,7 @@ class ScribbleArea(QWidget):
             self.rects.append(QRect(self.startingPoint,event.pos()))
             self.drawallRects()
             del self.rects[-1]
+            #we can update the table here if it's not too resource consuming
     
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and self.scribbling:
@@ -138,6 +144,7 @@ class ScribbleArea(QWidget):
             self.tempRect = None
             self.scribbling = False
             self.rects.append(QRect(self.startingPoint, self.endPoint))
+            #here we should also add this data to the table and update it
             self.drawallRects()
 
     def paintEvent(self, event):
@@ -155,15 +162,23 @@ class ScribbleArea(QWidget):
         super(ScribbleArea, self).resizeEvent(event)
 
     def drawallRects(self):
+        '''
+        is very inefficient because we don't just update the thing - no, we redraw *everything*
+        a better way of doing this (i believe) is to use QGraphicsView since we don't need to store (and redraw) elements - it's done for us
+
+        that said, i wasn't able to implement a proper rectangle deletion function properly without using this "array -> draw everything method" w/ QPainter
+        it's also a good deal easier to mesh with the table widget and export it into a format i understand
+
+        so maybe one day i'll refactor this but for now this is good enough without absolutely shredding through resources
+        '''
         try:
             self.clearImage()
             painter = QPainter(self.image)
             painter.setPen(QPen(self.myPenColor, self.myPenWidth, Qt.SolidLine,
                     Qt.RoundCap, Qt.RoundJoin))
-            painter.drawPixmap(QRect(0,0,50,50),QPixmap("rovercourse.png"))
-            #print(self.endPoint.x())
-            #print(self.endPoint.y())
-            #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap("rovercourse.png"))
+            #at this point we can redraw the image
+            #painter.drawPixmap(QRect(0,0,50,50),QPixmap("rovercourse.png"))
+            #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
             for rect in self.rects:
                 painter.drawRect(rect)
             self.modified = True
@@ -204,21 +219,23 @@ class ScribbleArea(QWidget):
     def penWidth(self):
         return self.myPenWidth
 
-class ApplicationWindow(QMainWindow):
+class ApplicationWindow(QMainWindow,Ui_MainWindow):
     def __init__(self):
-        super(ApplicationWindow, self).__init__()
+        PyQt5.QtWidgets.QMainWindow.__init__(self)
+        self.setupUi(self)
 
         self.saveAsActs = []
 
-        self.scribbleArea = ScribbleArea()
-        self.setCentralWidget(self.scribbleArea)
+        #self.scribbleArea = ScribbleArea()
+        self.widget = ScribbleArea(self.widget)
+        self.widget.resize(400,300)
 
-        self.createActions()
-        self.createMenus()
+        #self.createActions()
+        #self.createMenus()
 
-        self.setWindowTitle("Scribble")
-        self.resize(500, 500)
-
+        #self.setWindowTitle("Scribble")
+        #self.resize(500, 500)
+'''
     def closeEvent(self, event):
         if self.maybeSave():
             event.accept()
@@ -333,7 +350,7 @@ class ApplicationWindow(QMainWindow):
 
     def maybeSave(self):
         #just close w/out prompting user
-        '''
+        #comment below
         if self.scribbleArea.isModified():
             ret = QMessageBox.warning(self, "Scribble",
                         "The image has been modified.\n"
@@ -344,7 +361,7 @@ class ApplicationWindow(QMainWindow):
                 return self.saveFile('png')
             elif ret == QMessageBox.Cancel:
                 return False
-        '''
+        #comment above
         return True
 
     def saveFile(self, fileFormat):
@@ -356,12 +373,13 @@ class ApplicationWindow(QMainWindow):
             return self.scribbleArea.saveImage(fileName, fileFormat)
 
         return False
+    '''
 
 
 class AppContext(ApplicationContext):          
     def run(self):                              
         aw = ApplicationWindow()
-        aw.setWindowTitle("AACT Telemetry UI")
+        aw.setWindowTitle("RectangleMappingTool")
         aw.show()
         return self.app.exec_()                 
 
