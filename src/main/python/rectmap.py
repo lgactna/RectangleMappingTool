@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(954, 554)
+        MainWindow.resize(908, 657)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -44,6 +44,12 @@ class Ui_MainWindow(object):
         self.widget_2.setObjectName("widget_2")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.widget_2)
         self.gridLayout_2.setObjectName("gridLayout_2")
+        self.pushButton = QtWidgets.QPushButton(self.widget_2)
+        self.pushButton.setObjectName("pushButton")
+        self.gridLayout_2.addWidget(self.pushButton, 0, 0, 1, 1)
+        self.pushButton_2 = QtWidgets.QPushButton(self.widget_2)
+        self.pushButton_2.setObjectName("pushButton_2")
+        self.gridLayout_2.addWidget(self.pushButton_2, 1, 0, 1, 1)
         self.gridLayout.addWidget(self.widget_2, 6, 0, 1, 4)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout.addItem(spacerItem, 0, 0, 1, 1)
@@ -80,7 +86,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.line, 0, 1, 4, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 954, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 908, 26))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -105,6 +111,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.pushButton.setText(_translate("MainWindow", "add table row"))
+        self.pushButton_2.setText(_translate("MainWindow", "delete table row"))
         item = self.tableWidget.verticalHeaderItem(0)
         item.setText(_translate("MainWindow", "1"))
         item = self.tableWidget.horizontalHeaderItem(0)

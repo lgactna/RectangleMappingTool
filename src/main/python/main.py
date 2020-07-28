@@ -51,7 +51,7 @@ import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
-        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget)
+        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem)
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 import sys
@@ -79,16 +79,8 @@ class ScribbleArea(QWidget):
         self.image = QImage()
         self.startingPoint = QPoint()
         self.endPoint = QPoint()
-        self.tempRect = None
         self.rects = []
         #self.dataChanged = pyqtSignal()
-
-
-        self.setStyleSheet = """
-            background-image: url("rovercourse.png"); 
-            background-repeat: no-repeat; 
-            background-position: center;
-    """
 
     def openImage(self, fileName):
         loadedImage = QImage()
@@ -120,7 +112,6 @@ class ScribbleArea(QWidget):
 
     def clearImage(self):
         self.image.fill(qRgb(255, 255, 255))
-        #self.image.fill = QImage().load("rovercourse.png")
         self.modified = True
         self.update()
 
@@ -129,6 +120,7 @@ class ScribbleArea(QWidget):
             self.clearImage()
             del self.rects[-1]
             self.drawallRects()
+            #we also need to update the table here
         except Exception as e:
             print(e)
 
@@ -147,7 +139,6 @@ class ScribbleArea(QWidget):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and self.scribbling:
             self.endPoint = event.pos()
-            self.tempRect = None
             self.scribbling = False
             self.rects.append(QRect(self.startingPoint, self.endPoint))
             #here we should also add this data to the table and update it
@@ -237,14 +228,32 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.widget = ScribbleArea(self.widget)
         self.widget.resize(400,300)
         self.widget.dataChanged.connect(self.getData)
+
+        self.pushButton.clicked.connect(self.adddata)
+        self.pushButton_2.clicked.connect(self.removedata)
         #self.createActions()
         #self.createMenus()
 
         #self.setWindowTitle("Scribble")
         #self.resize(500, 500)
+    def adddata(self,coords):
+        row_number = self.tableWidget.rowCount()+1
+        self.tableWidget.setRowCount(row_number) 
+        self.tableWidget.setItem(row_number-1,0,QTableWidgetItem(str(coords[0])))
+        self.tableWidget.setItem(row_number-1,1,QTableWidgetItem(str(coords[1])))
+        self.tableWidget.setItem(row_number-1,2,QTableWidgetItem(str(coords[2])))
+        self.tableWidget.setItem(row_number-1,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
+
+        #we can perform brute-force checking with QRect.intersects(<QRect2>)
+        #should we? dunno
+    def removedata(self):
+        self.tableWidget.removeRow(3)
+        del self.widget.rects[2]
+        self.widget.drawallRects()
     def getData(self):
-        print(self.widget.rects) #this gets our QRect objects, and we can just start getting data from here
-        
+        #print(self.widget.rects) #this gets our QRect objects, and we can just start getting data from here
+        newrect = self.widget.rects[len(self.widget.rects)-1]
+        self.adddata(newrect.getCoords())
 '''
     def closeEvent(self, event):
         if self.maybeSave():
