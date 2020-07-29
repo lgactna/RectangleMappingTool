@@ -46,6 +46,21 @@
 
 #endregion licensing
 
+#region todo
+'''process:
+introduction
+user loads an image (or doesn't)
+user draws pretty rectangles
+user defines top-left and lower-right equivalents (or doesn't, in which case the existing values are sent to the final step)
+set drawing area and label to 0 size, add columns to table defining the new regions (gps coordinates, in our case)
+allow user to define f-string
+allow user to export table values as a .csv (and .txt for f-string)
+
+---
+implement functionality allowing user to import a .csv, stripping the values from that
+'''
+#endregion
+
 #region imports
 import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
@@ -69,9 +84,7 @@ class ScribbleArea(QWidget):
     dataChanged = pyqtSignal()
     posChanged = pyqtSignal(int,int)
     def __init__(self, parent=None):
-        
         super(ScribbleArea, self).__init__(parent)
-        #super().__init__()
 
         #self.setAttribute(Qt.WA_StaticContents)
         self.modified = False
@@ -83,9 +96,8 @@ class ScribbleArea(QWidget):
         self.endPoint = QPoint()
         self.rects = []
 
+        #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed. This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
-        #self.dataChanged = pyqtSignal()
-
     def openImage(self, fileName):
         loadedImage = QImage()
         if not loadedImage.load(fileName):
@@ -233,7 +245,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.drawing_area.dataChanged.connect(self.getData)
         self.drawing_area.posChanged.connect(self.updateCoords)
 
-        self.pushButton.clicked.connect(self.adddata)
+        self.pushButton.clicked.connect(self.makebigger)
         self.pushButton_2.clicked.connect(self.removedata)
 
         self.actionUndo.triggered.connect(self.undo)
@@ -242,18 +254,62 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.actionGitHub_Repository.triggered.connect(self.openGithub)
         self.actionAbout.triggered.connect(self.about)
 
+        self.check_overlapping = True
+
+        #this needs to be thrown into a function later
+        if not self.check_overlapping:
+            self.table_widget.setColumnCount(4) 
+
         #self.resize(500, 500)
+    def makebigger(self):
+        '''
+        new_h = self.drawing_area.size().height() + 75
+        print(self.drawing_area.size().height())
+        print(new_h)
+        new_w = self.drawing_area.size().width() + 100
+        self.drawing_area.resize(new_w,new_h)
+        '''
+        print(self.table_widget.item(0,1).text())
     def adddata(self,coords):
-        row_number = self.table_widget.rowCount()+1
-        self.table_widget.setRowCount(row_number) 
-        self.table_widget.setItem(row_number-1,0,QTableWidgetItem(str(coords[0])))
-        self.table_widget.setItem(row_number-1,1,QTableWidgetItem(str(coords[1])))
-        self.table_widget.setItem(row_number-1,2,QTableWidgetItem(str(coords[2])))
-        self.table_widget.setItem(row_number-1,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
+        row_number = self.table_widget.rowCount()
+        self.table_widget.setRowCount(row_number+1) 
+        self.table_widget.setItem(row_number,0,QTableWidgetItem(str(coords[0])))
+        self.table_widget.setItem(row_number,1,QTableWidgetItem(str(coords[1])))
+        self.table_widget.setItem(row_number,2,QTableWidgetItem(str(coords[2])))
+        self.table_widget.setItem(row_number,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
+        self.table_widget.setItem(row_number,4,QTableWidgetItem(""))
+
+
 
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
-        #should we? dunno
-        #but if so, perhaps consider an "intersects with" column
+        #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
+        #add an "overlaps with" column if this is enabled
+        if self.check_overlapping:
+            rectangles = self.drawing_area.rects
+            #we clear the entire column on each full overlap check
+            for row_number in range(0,len(rectangles)):
+                self.table_widget.setItem(row_number,4,QTableWidgetItem(""))
+            for rect1_index in range(0,len(rectangles)):
+                for rect2_index in range(rect1_index+1,len(rectangles)):
+                    intersects = rectangles[rect1_index].intersects(rectangles[rect2_index])
+                    #print(rectangles[rect1_index].intersects(rectangles[rect2_index]))
+                    print(f"Rectangle {rect1_index} overlaps with {rect2_index}?"+str(intersects))
+                    ########
+                    current = self.table_widget.item(rect1_index,4).text()
+                    current2 = self.table_widget.item(rect2_index,4).text()
+                    if intersects:
+                        if current == "":
+                            self.table_widget.setItem(rect1_index,4,QTableWidgetItem(str(rect2_index+1)))
+                        else:
+                            self.table_widget.setItem(rect1_index,4,QTableWidgetItem(current+","+str(rect2_index+1)))
+                        if current2 == "":
+                            self.table_widget.setItem(rect2_index,4,QTableWidgetItem(str(rect1_index+1)))
+                        else:
+                            self.table_widget.setItem(rect2_index,4,QTableWidgetItem(current+","+str(rect1_index+1)))
+
+
+            print("---")
+
     def removedata(self):
         self.table_widget.removeRow(3)
         del self.drawing_area.rects[2]
@@ -267,7 +323,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
     #region Actions
     def undo(self):
         self.drawing_area.undoLast()
-        #update table entries on undo
+        self.table_widget.removeRow(self.table_widget.rowCount()-1)#delete most recent table entry on undo
     def changePenColor(self):
         newColor = QColorDialog.getColor(self.drawing_area.penColor())
         if newColor.isValid():
