@@ -66,7 +66,7 @@ import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
-        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem)
+        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem, QGridLayout)
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 import sys
@@ -247,9 +247,17 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         PyQt5.QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
         self.setWindowTitle("RectangleMappingTool")
+        '''
+        See https://stackoverflow.com/questions/35185113/configure-qwidget-to-fill-parent-via-layouts.
+        this appears to be the same issue in which this new widget is initialized to a 100px by 25px area
+        so we create a new grid layout and place drawing_area into it
+        this also affords us some flexibility if we ever want to hide drawing_area and place something different in container_left
+        '''
+        self.drawing_area = ScribbleArea(self.container_left)
+        left_layout = QGridLayout()
+        left_layout.addWidget(self.drawing_area, 0, 0, 1, 1)
+        self.container_left.setLayout(left_layout)
 
-        #self.scribbleArea = ScribbleArea()
-        self.drawing_area = ScribbleArea(self.drawing_area)
         #self.drawing_area.resize(400,300)
         self.drawing_area.dataChanged.connect(self.updatetable)
         self.drawing_area.posChanged.connect(self.updateCoords)

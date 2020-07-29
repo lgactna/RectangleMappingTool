@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1156</width>
-    <height>724</height>
+    <width>1153</width>
+    <height>753</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -103,7 +103,7 @@
      </widget>
     </item>
     <item row="0" column="0">
-     <widget class="QWidget" name="drawing_area" native="true">
+     <widget class="QWidget" name="container_left" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -154,14 +154,14 @@
    <zorder>table_widget</zorder>
    <zorder>line</zorder>
    <zorder>coord_label</zorder>
-   <zorder>drawing_area</zorder>
+   <zorder>container_left</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1156</width>
+     <width>1153</width>
      <height>26</height>
     </rect>
    </property>
