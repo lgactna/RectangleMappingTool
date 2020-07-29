@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1153</width>
+    <width>1351</width>
     <height>753</height>
    </rect>
   </property>
@@ -18,60 +18,152 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="2">
-     <widget class="QTableWidget" name="table_widget">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+    <item row="2" column="0" colspan="4">
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>575</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>110</number>
-      </attribute>
-      <column>
-       <property name="text">
-        <string>x1</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>y1</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>x2</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>y2</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Overlaps with:</string>
-       </property>
-      </column>
      </widget>
     </item>
     <item row="0" column="1" rowspan="2">
      <widget class="Line" name="line">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="maximumSize">
+       <size>
+        <width>580</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <attribute name="title">
+        <string>Coordinate Table</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QTableWidget" name="table_widget">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>575</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <attribute name="horizontalHeaderDefaultSectionSize">
+           <number>110</number>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>x1</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>y1</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>x2</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>y2</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Overlaps with:</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Conversion</string>
+       </attribute>
+       <layout class="QFormLayout" name="formLayout">
+        <item row="1" column="0">
+         <widget class="QLineEdit" name="lineEdit"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" colspan="2">
+         <widget class="QTableView" name="tableView"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_4">
+       <attribute name="title">
+        <string>Export Data</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item alignment="Qt::AlignTop">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>You can export the coordinates (raw or converted) into a .csv; alternatively, you can also define an f-string to use, which will export the data to a .txt file.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Settings</string>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QToolButton" name="toggle_show_button">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="arrowType">
+       <enum>Qt::DownArrow</enum>
       </property>
      </widget>
     </item>
@@ -82,23 +174,6 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0" colspan="3">
-     <widget class="Line" name="line_2">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QToolButton" name="toggle_show_button">
-      <property name="text">
-       <string/>
-      </property>
-      <property name="arrowType">
-       <enum>Qt::DownArrow</enum>
       </property>
      </widget>
     </item>
@@ -151,17 +226,17 @@
    <zorder>line_2</zorder>
    <zorder>toggle_show_button</zorder>
    <zorder>widget_2</zorder>
-   <zorder>table_widget</zorder>
    <zorder>line</zorder>
    <zorder>coord_label</zorder>
    <zorder>container_left</zorder>
+   <zorder>tabWidget</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1153</width>
+     <width>1351</width>
      <height>26</height>
     </rect>
    </property>

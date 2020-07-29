@@ -98,6 +98,8 @@ class ScribbleArea(QWidget):
 
         #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed. This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
+        self.real_time_rects = False
+        self.real_time_table = False
     def openImage(self, fileName):
         loadedImage = QImage()
         if not loadedImage.load(fileName):
@@ -148,10 +150,12 @@ class ScribbleArea(QWidget):
     def mouseMoveEvent(self, event):
         self.posChanged.emit(event.pos().x(),event.pos().y())
         if (event.buttons() & Qt.LeftButton) and self.scribbling:
-            self.rects.append(QRect(self.startingPoint,event.pos()))
-            self.drawallRects()
-            self.dataChanged.emit() #this is used for "real-time" table updates
-            del self.rects[-1]
+            if self.real_time_rects:
+                self.rects.append(QRect(self.startingPoint,event.pos()))
+                self.drawallRects()
+                if self.real_time_table:
+                    self.dataChanged.emit() #this is used for "real-time" table updates
+                del self.rects[-1]
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and self.scribbling:
             self.endPoint = event.pos()
@@ -258,7 +262,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         left_layout.addWidget(self.drawing_area, 0, 0, 1, 1)
         self.container_left.setLayout(left_layout)
 
-        #self.drawing_area.resize(400,300)
+        self.drawing_area.resize(400,300) #we will need to set a signal later that resizes the background image based on the current widget size...
         self.drawing_area.dataChanged.connect(self.updatetable)
         self.drawing_area.posChanged.connect(self.updateCoords)
 
@@ -271,7 +275,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.actionGitHub_Repository.triggered.connect(self.openGithub)
         self.actionAbout.triggered.connect(self.about)
 
-        self.check_overlapping = True
+        self.check_overlapping = False
 
         #this needs to be thrown into a function later
         if not self.check_overlapping:
