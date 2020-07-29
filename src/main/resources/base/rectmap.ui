@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="windowModality">
+   <enum>Qt::NonModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>869</width>
-    <height>635</height>
+    <width>1156</width>
+    <height>724</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,53 +18,29 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0" colspan="2">
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
+    <item row="0" column="2">
+     <widget class="QTableWidget" name="table_widget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <property name="sizeHint" stdset="0">
+      <property name="minimumSize">
        <size>
-        <width>20</width>
-        <height>40</height>
+        <width>0</width>
+        <height>0</height>
        </size>
       </property>
-     </spacer>
-    </item>
-    <item row="4" column="0" colspan="4">
-     <widget class="Line" name="line_2">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+      <property name="maximumSize">
+       <size>
+        <width>575</width>
+        <height>16777215</height>
+       </size>
       </property>
-     </widget>
-    </item>
-    <item row="5" column="0" rowspan="2">
-     <widget class="QToolButton" name="toggle_show_button">
-      <property name="text">
-       <string/>
-      </property>
-      <property name="arrowType">
-       <enum>Qt::DownArrow</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="2" rowspan="4">
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3" rowspan="4">
-     <widget class="QTableWidget" name="table_widget">
       <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>100</number>
+       <number>110</number>
       </attribute>
-      <row>
-       <property name="text">
-        <string>1</string>
-       </property>
-      </row>
       <column>
        <property name="text">
         <string>x1</string>
@@ -82,42 +61,48 @@
         <string>y2</string>
        </property>
       </column>
-      <item row="0" column="0">
+      <column>
        <property name="text">
-        <string>100</string>
+        <string>Overlaps with:</string>
        </property>
-      </item>
-      <item row="0" column="1">
-       <property name="text">
-        <string>200</string>
-       </property>
-      </item>
-      <item row="0" column="2">
-       <property name="text">
-        <string>300</string>
-       </property>
-      </item>
-      <item row="0" column="3">
-       <property name="text">
-        <string>400</string>
-       </property>
-      </item>
+      </column>
      </widget>
     </item>
-    <item row="3" column="0" colspan="2">
-     <spacer name="verticalSpacer_2">
+    <item row="0" column="1" rowspan="2">
+     <widget class="Line" name="line">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>40</height>
-       </size>
-      </property>
-     </spacer>
+     </widget>
     </item>
-    <item row="1" column="0" colspan="2">
+    <item row="1" column="0">
+     <widget class="QLabel" name="coord_label">
+      <property name="text">
+       <string>x: 0 y: 0</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0" colspan="3">
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QToolButton" name="toggle_show_button">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="arrowType">
+       <enum>Qt::DownArrow</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
      <widget class="QWidget" name="drawing_area" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -133,7 +118,7 @@
       </property>
      </widget>
     </item>
-    <item row="7" column="0">
+    <item row="4" column="0">
      <widget class="QWidget" name="widget_2" native="true">
       <property name="enabled">
        <bool>true</bool>
@@ -162,24 +147,21 @@
       </layout>
      </widget>
     </item>
-    <item row="2" column="0" colspan="2">
-     <widget class="QLabel" name="coord_label">
-      <property name="text">
-       <string>x: 0 y: 0</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
    </layout>
+   <zorder>line_2</zorder>
+   <zorder>toggle_show_button</zorder>
+   <zorder>widget_2</zorder>
+   <zorder>table_widget</zorder>
+   <zorder>line</zorder>
+   <zorder>coord_label</zorder>
+   <zorder>drawing_area</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>869</width>
+     <width>1156</width>
      <height>26</height>
     </rect>
    </property>
