@@ -191,16 +191,7 @@ class ScribbleArea(QWidget):
             painter.setPen(QPen(self.myPenColor, self.myPenWidth, Qt.SolidLine,
                     Qt.RoundCap, Qt.RoundJoin))
             #at this point we can redraw the image
-            bg_img = QPixmap(imgpath)
-            #print(bg_img.height())
-           # print(bg_img.width())
-            #bg_img_width = bg_img.width()
-            #bg_img_height = bg_img.height()
-            if bg_img.width() > self.frameGeometry().width():
-                final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
-               # print(final_height)
-                final_width = self.frameGeometry().width()
-                painter.drawPixmap(QRect(0,0,final_width,final_height),bg_img)
+            #painter.drawPixmap(QRect(0,0,50,50),QPixmap("rovercourse.png"))
             #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
             for rect in self.rects:
                 painter.drawRect(rect)
@@ -250,8 +241,8 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
 
         #self.scribbleArea = ScribbleArea()
         self.drawing_area = ScribbleArea(self.drawing_area)
-        #self.drawing_area.resize(400,300)
-        self.drawing_area.dataChanged.connect(self.updatetable)
+        self.drawing_area.resize(400,300)
+        self.drawing_area.dataChanged.connect(self.getData)
         self.drawing_area.posChanged.connect(self.updateCoords)
 
         self.pushButton.clicked.connect(self.makebigger)
@@ -279,20 +270,21 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.drawing_area.resize(new_w,new_h)
         '''
         print(self.table_widget.item(0,1).text())
-    def updatetable(self):
-        #i hate this
-        #but i want to finish other functionality before turning to efficiency changes so here we are
-        self.table_widget.setRowCount(0)
+    def adddata(self,coords):
+        #if the pen is currently down, then we destroy the last "real-time" value
+        if self.drawing_area.scribbling and self.table_widget.rowCount():
+            print("deleting row %s"%self.table_widget.rowCount())
+            self.table_widget.removeRow(self.table_widget.rowCount()-1)
 
-        for row_number in range(0,len(self.drawing_area.rects)):
-            coords = self.drawing_area.rects[row_number].getCoords()
-            #print("adding row %s" % str(int(row_number)+1))
-            self.table_widget.setRowCount(row_number+1) 
-            self.table_widget.setItem(row_number,0,QTableWidgetItem(str(coords[0])))
-            self.table_widget.setItem(row_number,1,QTableWidgetItem(str(coords[1])))
-            self.table_widget.setItem(row_number,2,QTableWidgetItem(str(coords[2])))
-            self.table_widget.setItem(row_number,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
-            self.table_widget.setItem(row_number,4,QTableWidgetItem(""))
+        
+        row_number = self.table_widget.rowCount() #separated for clarity
+        print("adding row %s" % str(int(row_number)+1))
+        self.table_widget.setRowCount(row_number+1) 
+        self.table_widget.setItem(row_number,0,QTableWidgetItem(str(coords[0])))
+        self.table_widget.setItem(row_number,1,QTableWidgetItem(str(coords[1])))
+        self.table_widget.setItem(row_number,2,QTableWidgetItem(str(coords[2])))
+        self.table_widget.setItem(row_number,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
+        self.table_widget.setItem(row_number,4,QTableWidgetItem(""))
 
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
@@ -327,6 +319,10 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.table_widget.removeRow(3)
         del self.drawing_area.rects[2]
         self.drawing_area.drawallRects()
+    def getData(self):
+        #print(self.drawing_area.rects) #this gets our QRect objects, and we can just start getting data from here
+        newrect = self.drawing_area.rects[len(self.drawing_area.rects)-1]
+        self.adddata(newrect.getCoords())
     def updateCoords(self,x,y):
         self.coord_label.setText("x:"+str(x)+" y:"+str(y))
     #region Actions
@@ -335,8 +331,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.table_widget.removeRow(self.table_widget.rowCount()-1)#delete most recent table entry on undo
     def changePenColor(self):
         newColor = QColorDialog.getColor(self.drawing_area.penColor())
-        print(newColor.getRgb()) #returns a standard tuple
-        print(newColor.getRgb()[2])
+        print(newColor)
         if newColor.isValid():
             self.drawing_area.setPenColor(newColor)
     def changePenWidth(self):
