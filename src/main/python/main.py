@@ -103,16 +103,24 @@ class ScribbleArea(QWidget):
         self.real_time_rects = True
         self.real_time_table = False
     def openImage(self, fileName):
+        new_image = QImage()
+        print(new_image.size())
+        
+        self.loaded_image = fileName
+        self.drawallRects()
+        '''
         loadedImage = QImage()
         if not loadedImage.load(fileName):
             return False
 
-        newSize = loadedImage.size().expandedTo(self.size())
+        newSize = loadedImage.size().expandedTo(self.size()) #returns the maximum height and width given the two sizes
+        #also see qsize.scale()
         self.resizeImage(loadedImage, newSize)
         self.image = loadedImage
         self.modified = False
         self.update()
         return True
+        '''
 
     def saveImage(self, fileName, fileFormat):
         visibleImage = self.image
@@ -197,7 +205,7 @@ class ScribbleArea(QWidget):
             painter.setPen(QPen(self.myPenColor, self.myPenWidth, Qt.SolidLine,
                     Qt.RoundCap, Qt.RoundJoin))
             #at this point we can redraw the image
-            bg_img = QPixmap(imgpath)
+            bg_img = QPixmap(self.loaded_image)
             #print(bg_img.height())
            # print(bg_img.width())
             #bg_img_width = bg_img.width()
@@ -346,19 +354,29 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.coord_label.setText("x:"+str(x)+" y:"+str(y))
     #region Actions
     def open(self):
-        #if self.savePrompt():
-        if True:
-            fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
-                    QDir.currentPath())
-            if fileName:
-                self.drawing_area.loaded_image = fileName
-                self.drawing_area.drawallRects()
+        fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
+                QDir.currentPath())
+        if fileName:
+            if not QImage().load(fileName):
+                QMessageBox.critical(self, "Couldn't load image",
+                            "This image appears to be an unsupported filetype and could not be loaded.",
+                            QMessageBox.Ok)
+                self.open()
+            else:
+                if self.drawing_area.rects:
+                    response = QMessageBox.question(self, "Reset drawing area?",
+                            'Do you want to clear drawn rectangles and start from scratch?',
+                            QMessageBox.Yes | QMessageBox.No)
+                    if response == QMessageBox.Yes:
+                        self.drawing_area.rects = []
+                        self.updatetable()
+                self.drawing_area.openImage(fileName)
     def undo(self):
         self.drawing_area.undoLast()
         self.table_widget.removeRow(self.table_widget.rowCount()-1)#delete most recent table entry on undo
     def changePenColor(self):
         newColor = QColorDialog.getColor(self.drawing_area.penColor())
-        print(newColor.getRgb()) #returns a standard tuple
+        print(newColor.getRgb()) #returns a standard rgba tuple
         print(newColor.getRgb()[2])
         if newColor.isValid():
             self.drawing_area.setPenColor(newColor)
@@ -375,41 +393,29 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
     def openGithub(self):
         webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
     #endregion
-'''
+    def closeprompt(self):
+        #because "saving" could mean anything from exporting the coords to saving the image
+        #there is no handling of saving here
+        #a modified drawing_area is one that has any rectangles whatsoever
+
+        #if this ends up being just a pre-close prompt, change the language accordingly
+        if self.drawing_area.rects:
+            ret = QMessageBox.information(self, "RectangleMappingTool",
+                        'Ensure that you have exported or saved any data you were working with.\n'
+                        'Click "Close" to continue, or "Cancel" to return.',
+                        QMessageBox.Close | QMessageBox.Cancel)
+            if ret == QMessageBox.Close:
+                return True
+            elif ret == QMessageBox.Cancel:
+                return False
+        else:
+            return True
     def closeEvent(self, event):
-        if self.savePrompt():
+        if self.closeprompt():
             event.accept()
         else:
             event.ignore()
-
-    def open(self):
-        if self.savePrompt():
-            fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
-                    QDir.currentPath())
-            if fileName:
-                self.scribbleArea.openImage(fileName)
-
-    def save(self):
-        action = self.sender()
-        fileFormat = action.data()
-        self.saveFile(fileFormat)
-
-    def savePrompt(self):
-        #just close w/out prompting user
-        #comment below
-        if self.scribbleArea.isModified():
-            ret = QMessageBox.warning(self, "Scribble",
-                        "The image has been modified.\n"
-                        "Do you want to save your changes?",
-                        QMessageBox.Save | QMessageBox.Discard |
-                        QMessageBox.Cancel)
-            if ret == QMessageBox.Save:
-                return self.saveFile('png')
-            elif ret == QMessageBox.Cancel:
-                return False
-        #comment above
-        return True
-
+'''
     def saveFile(self, fileFormat):
         initialPath = QDir.currentPath() + '/untitled.' + fileFormat
 
