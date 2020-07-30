@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1273</width>
-    <height>753</height>
+    <width>1028</width>
+    <height>683</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,35 +34,6 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="0">
-     <widget class="QWidget" name="widget_2" native="true">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="pushButton">
-         <property name="text">
-          <string>add table row</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QPushButton" name="pushButton_2">
-         <property name="text">
-          <string>delete table row</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QLabel" name="coord_label">
       <property name="text">
@@ -70,23 +41,6 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QToolButton" name="toggle_show_button">
-      <property name="text">
-       <string/>
-      </property>
-      <property name="arrowType">
-       <enum>Qt::DownArrow</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0" colspan="4">
-     <widget class="Line" name="line_2">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
       </property>
      </widget>
     </item>
@@ -99,6 +53,9 @@
     </item>
     <item row="0" column="2">
      <widget class="QTabWidget" name="tabWidget">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="maximumSize">
        <size>
         <width>599</width>
@@ -106,7 +63,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -124,7 +81,7 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
-             <widget class="QLabel" name="label_5">
+             <widget class="QLabel" name="current_selected_label">
               <property name="text">
                <string>Currently selected: Rectangle 1</string>
               </property>
@@ -134,7 +91,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_6">
+             <widget class="QLabel" name="current_coordinates_label">
               <property name="text">
                <string>Coordinates: x1, y1, x2, y2</string>
               </property>
@@ -144,7 +101,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_7">
+             <widget class="QLabel" name="current_overlaps_label">
               <property name="text">
                <string>Overlaps with: 1, 2, 3</string>
               </property>
@@ -158,14 +115,14 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
-             <widget class="QPushButton" name="pushButton_3">
+             <widget class="QPushButton" name="delete_rect_button">
               <property name="text">
                <string>Delete</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_4">
+             <widget class="QPushButton" name="change_rect_color_button">
               <property name="text">
                <string>Change color</string>
               </property>
@@ -244,58 +201,51 @@
         <item>
          <layout class="QFormLayout" name="formLayout">
           <item row="0" column="0">
-           <widget class="QLineEdit" name="lineEdit"/>
+           <widget class="QLineEdit" name="conv_x1_edit"/>
           </item>
           <item row="0" column="1">
-           <widget class="QLabel" name="label">
+           <widget class="QLabel" name="conv_x1_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>Top-left, x (x = 0 px)</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QLineEdit" name="lineEdit_2"/>
+           <widget class="QLineEdit" name="conv_y1_edit"/>
           </item>
           <item row="1" column="1">
-           <widget class="QLabel" name="label_20">
+           <widget class="QLabel" name="conv_y1_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>Top-left, y (y = 0 px)</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QLineEdit" name="lineEdit_3"/>
+           <widget class="QLineEdit" name="conv_x2_edit"/>
           </item>
           <item row="2" column="1">
-           <widget class="QLabel" name="label_21">
+           <widget class="QLabel" name="conv_x2_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>Bottom-right, x (x = ... px)</string>
             </property>
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QLineEdit" name="lineEdit_4"/>
+           <widget class="QLineEdit" name="conv_y2_edit"/>
           </item>
           <item row="3" column="1">
-           <widget class="QLabel" name="label_22">
+           <widget class="QLabel" name="conv_y2_label">
             <property name="text">
-             <string>TextLabel</string>
+             <string>Bottom-right, y (y = ... px)</string>
             </property>
            </widget>
           </item>
          </layout>
         </item>
         <item>
-         <widget class="QLabel" name="label_18">
-          <property name="text">
-           <string>really the below should be a qtableview but lazy</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QLabel" name="label_19">
           <property name="text">
-           <string>The converted coordinates will be shown below:</string>
+           <string>The converted coordinates will be shown below (read-only):</string>
           </property>
           <property name="wordWrap">
            <bool>false</bool>
@@ -303,10 +253,18 @@
          </widget>
         </item>
         <item>
-         <widget class="QTableWidget" name="tableWidget">
+         <widget class="QTableWidget" name="converted_table_widget">
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
           <attribute name="horizontalHeaderDefaultSectionSize">
            <number>142</number>
           </attribute>
+          <row>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </row>
           <column>
            <property name="text">
             <string>x1</string>
@@ -327,6 +285,26 @@
             <string>y2</string>
            </property>
           </column>
+          <item row="0" column="0">
+           <property name="text">
+            <string/>
+           </property>
+          </item>
+          <item row="0" column="1">
+           <property name="text">
+            <string/>
+           </property>
+          </item>
+          <item row="0" column="2">
+           <property name="text">
+            <string/>
+           </property>
+          </item>
+          <item row="0" column="3">
+           <property name="text">
+            <string/>
+           </property>
+          </item>
          </widget>
         </item>
        </layout>
@@ -363,21 +341,21 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QRadioButton" name="radioButton">
+           <widget class="QRadioButton" name="raw_radio_button">
             <property name="text">
              <string>Raw coordinates</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radioButton_2">
+           <widget class="QRadioButton" name="converted_radio_button">
             <property name="text">
              <string>Converted coordinates</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radioButton_3">
+           <widget class="QRadioButton" name="all_radio_button">
             <property name="text">
              <string>Both</string>
             </property>
@@ -386,7 +364,7 @@
          </layout>
         </item>
         <item>
-         <widget class="QLabel" name="label_14">
+         <widget class="QLabel" name="selection_label">
           <property name="text">
            <string>Selection description... Export the raw coordinates of the drawn rectangles, pixel based. The format is ....</string>
           </property>
@@ -396,7 +374,39 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_7">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>You can also add the following fields:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QCheckBox" name="overlaps_checkbox">
+            <property name="text">
+             <string>Overlaps</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="color_checkbox">
+            <property name="text">
+             <string>Color</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="custom_checkbox">
+            <property name="text">
+             <string>Custom fields</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="export_csv_button">
           <property name="text">
            <string>Export to .csv</string>
           </property>
@@ -427,7 +437,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_17">
+         <widget class="QLabel" name="vars_label">
           <property name="text">
            <string>Available variables: x1, y1, x2, y2, x1_conv, y1_conv, x2_conv, y2_conv, overlaps, color</string>
           </property>
@@ -437,7 +447,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPlainTextEdit" name="plainTextEdit">
+         <widget class="QPlainTextEdit" name="fstring_edit">
           <property name="font">
            <font>
             <family>Consolas</family>
@@ -454,14 +464,14 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_9">
+         <widget class="QPushButton" name="open_external_fstring">
           <property name="text">
            <string>Open f-string edit in new window</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_8">
+         <widget class="QPushButton" name="export_txt_button">
           <property name="text">
            <string>Export to .txt</string>
           </property>
@@ -478,7 +488,7 @@
          <enum>QFormLayout::DontWrapRows</enum>
         </property>
         <item row="1" column="0">
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="active_redraw_checkbox">
           <property name="text">
            <string/>
           </property>
@@ -492,14 +502,14 @@
          </widget>
         </item>
         <item row="2" column="0">
-         <widget class="QCheckBox" name="checkBox_2">
+         <widget class="QCheckBox" name="active_table_checkbox">
           <property name="text">
            <string/>
           </property>
          </widget>
         </item>
         <item row="3" column="0">
-         <widget class="QCheckBox" name="checkBox_3">
+         <widget class="QCheckBox" name="check_overlaps_checkbox">
           <property name="text">
            <string/>
           </property>
@@ -513,14 +523,14 @@
          </widget>
         </item>
         <item row="7" column="0" colspan="2">
-         <widget class="QPushButton" name="pushButton_5">
+         <widget class="QPushButton" name="set_color_button">
           <property name="text">
            <string>Set default color</string>
           </property>
          </widget>
         </item>
         <item row="8" column="0" colspan="2">
-         <widget class="QPushButton" name="pushButton_6">
+         <widget class="QPushButton" name="set_width_button">
           <property name="text">
            <string>Set default pen width</string>
           </property>
@@ -555,7 +565,10 @@
          </widget>
         </item>
         <item row="4" column="0">
-         <widget class="QCheckBox" name="checkBox_4">
+         <widget class="QCheckBox" name="active_overlaps_checkbox">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -573,9 +586,6 @@
      </widget>
     </item>
    </layout>
-   <zorder>line_2</zorder>
-   <zorder>toggle_show_button</zorder>
-   <zorder>widget_2</zorder>
    <zorder>line</zorder>
    <zorder>coord_label</zorder>
    <zorder>container_left</zorder>
@@ -586,7 +596,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1273</width>
+     <width>1028</width>
      <height>26</height>
     </rect>
    </property>
@@ -608,19 +618,19 @@
     </property>
     <addaction name="actionUndo"/>
    </widget>
-   <widget class="QMenu" name="menuSettings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <addaction name="actionPen_Color"/>
-    <addaction name="actionPen_Width"/>
-   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
     <addaction name="actionGitHub_Repository"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionPen_Color"/>
+    <addaction name="actionPen_Width"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
