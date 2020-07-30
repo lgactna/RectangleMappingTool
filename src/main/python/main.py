@@ -64,7 +64,7 @@ implement functionality allowing user to import a .csv, stripping the values fro
 #region imports
 import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
-from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap
+from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
         QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem, QGridLayout, QVBoxLayout)
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
@@ -98,7 +98,7 @@ class ScribbleArea(QWidget):
 
         #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed. This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
-        self.real_time_rects = False
+        self.real_time_rects = True
         self.real_time_table = False
     def openImage(self, fileName):
         loadedImage = QImage()
@@ -274,7 +274,8 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         left_layout.addWidget(self.drawing_area)
         self.scrollAreaWidgetContents.setLayout(left_layout)
         self.drawing_area.setMinimumSize(4000,3000) #we will need to set a signal later that resizes this widget based on a given background image (or we just directly resize it after calling open())
-        
+        self.drawing_area.setCursor(QCursor(Qt.CrossCursor)) #make this responsive to a setting
+
         self.drawing_area.dataChanged.connect(self.updatetable)
         self.drawing_area.posChanged.connect(self.updateCoords)
 
