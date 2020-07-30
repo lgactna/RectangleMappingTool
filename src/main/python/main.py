@@ -283,8 +283,9 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.container_left.setWidgetResizable(True)
         left_layout = QVBoxLayout()
         left_layout.addWidget(self.drawing_area)
+        left_layout.setAlignment(Qt.AlignHCenter)
         self.scrollAreaWidgetContents.setLayout(left_layout)
-        self.drawing_area.setMinimumSize(4000,3000) #we will need to set a signal later that resizes this widget based on a given background image (or we just directly resize it after calling open())
+        self.drawing_area.setFixedSize(400,300) #we will need to set a signal later that resizes this widget based on a given background image (or we just directly resize it after calling open())
         self.drawing_area.setCursor(QCursor(Qt.CrossCursor)) #make this responsive to a setting
 
         self.drawing_area.dataChanged.connect(self.updatetable)
@@ -296,6 +297,9 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.actionGitHub_Repository.triggered.connect(self.openGithub)
         self.actionAbout.triggered.connect(self.about)
         self.actionOpen_image.triggered.connect(self.open)
+
+        self.set_color_button.clicked.connect(self.changePenColor)
+        self.set_width_button.clicked.connect(self.changePenWidth)
 
         self.check_overlapping = False
 
