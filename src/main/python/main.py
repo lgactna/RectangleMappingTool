@@ -66,7 +66,7 @@ import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
-        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem, QGridLayout)
+        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem, QGridLayout, QVBoxLayout)
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 import sys
@@ -200,11 +200,14 @@ class ScribbleArea(QWidget):
            # print(bg_img.width())
             #bg_img_width = bg_img.width()
             #bg_img_height = bg_img.height()
-            if bg_img.width() > self.frameGeometry().width():
+            if bg_img.width() > self.frameGeometry().width(): #the image isn't drawing because you need to fix this
                 final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
-               # print(final_height)
+                print(final_height)
                 final_width = self.frameGeometry().width()
                 painter.drawPixmap(QRect(0,0,final_width,final_height),bg_img)
+            else:
+                painter.drawPixmap(QRect(0,0,bg_img.width(),bg_img.height()),bg_img)
+                #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
             #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
             for rect in self.rects:
                 painter.drawRect(rect)
@@ -256,18 +259,24 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         this appears to be the same issue in which this new widget is initialized to a 100px by 25px area
         so we create a new grid layout and place drawing_area into it
         this also affords us some flexibility if we ever want to hide drawing_area and place something different in container_left
+        ---
+        in order for a qscrollarea to work, the child (here self.scrollAreaWidgetContents) must have its own layout
+        however, obviously a layout will auto-resize elements inside it
+        so in order to account for this, we will manually set the minimum size of the newly-created drawing area 
+        thus forcing it to be that size and give us the scroll bars
+        the above is what i understood from a bunch of qt forum and stackoverflow posts
+        although the docs say that a standard resize() will be respected
+        i could not get it to do that
         '''
-        self.drawing_area = ScribbleArea(self.container_left)
-        left_layout = QGridLayout()
-        left_layout.addWidget(self.drawing_area, 0, 0, 1, 1)
-        self.container_left.setLayout(left_layout)
-
-        self.drawing_area.resize(400,300) #we will need to set a signal later that resizes the background image based on the current widget size...
+        self.drawing_area = ScribbleArea(self.scrollAreaWidgetContents)
+        self.container_left.setWidgetResizable(True)
+        left_layout = QVBoxLayout()
+        left_layout.addWidget(self.drawing_area)
+        self.scrollAreaWidgetContents.setLayout(left_layout)
+        self.drawing_area.setMinimumSize(4000,3000) #we will need to set a signal later that resizes this widget based on a given background image (or we just directly resize it after calling open())
+        
         self.drawing_area.dataChanged.connect(self.updatetable)
         self.drawing_area.posChanged.connect(self.updateCoords)
-
-        self.pushButton.clicked.connect(self.makebigger)
-        self.pushButton_2.clicked.connect(self.removedata)
 
         self.actionUndo.triggered.connect(self.undo)
         self.actionPen_Color.triggered.connect(self.changePenColor)

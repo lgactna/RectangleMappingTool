@@ -18,22 +18,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <widget class="QWidget" name="container_left" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>400</width>
-        <height>300</height>
-       </size>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QLabel" name="coord_label">
       <property name="text">
@@ -51,7 +35,7 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="2">
+    <item row="0" column="3">
      <widget class="QTabWidget" name="tabWidget">
       <property name="enabled">
        <bool>true</bool>
@@ -585,11 +569,28 @@
       </widget>
      </widget>
     </item>
+    <item row="0" column="0">
+     <widget class="QScrollArea" name="container_left">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>493</width>
+         <height>559</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
    </layout>
    <zorder>line</zorder>
    <zorder>coord_label</zorder>
-   <zorder>container_left</zorder>
    <zorder>tabWidget</zorder>
+   <zorder>container_left</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
