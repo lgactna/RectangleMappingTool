@@ -62,6 +62,7 @@ implement functionality allowing user to import a .csv, stripping the values fro
 #endregion
 
 #region imports
+#i *would* convert these to asterisks but then pylint makes my document look like a bloodbath
 import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor
@@ -75,7 +76,9 @@ import webbrowser
 from rectmap import Ui_MainWindow
 #------
 appctxt = ApplicationContext()
-imgpath = appctxt.get_resource('rovercourse.png')#gets relative/absolute path through fbs
+#no need for this since we can load images now
+#consider deleting rovercourse.png and associated references to below in the future
+#imgpath = appctxt.get_resource('rovercourse.png')#gets relative/absolute path through fbs
 #endregion imports
 
 class ScribbleArea(QWidget):
@@ -393,7 +396,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         QMessageBox.about(self, "About RectangleMappingTool",
                 '<p>RectangleMappingTool is a program designed for the <a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, built with PyQt5 and packaged through fbs.</p>'
                 '<p>Its primary purpose is to make creating rectangular bounding regions based on an image easier.</p>'
-                '<p>You can view the source and of this program and additional information <a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
+                '<p>You can view the source of this program and additional information <a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
     def openGithub(self):
         webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
     #endregion
