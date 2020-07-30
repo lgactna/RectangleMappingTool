@@ -95,8 +95,10 @@ class ScribbleArea(QWidget):
         self.startingPoint = QPoint()
         self.endPoint = QPoint()
         self.rects = []
+        self.loaded_image = None
 
-        #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed. This sets it to always receive mouse events, regardless.
+        #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed. 
+        #This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
         self.real_time_rects = True
         self.real_time_table = False
@@ -200,13 +202,14 @@ class ScribbleArea(QWidget):
            # print(bg_img.width())
             #bg_img_width = bg_img.width()
             #bg_img_height = bg_img.height()
-            if bg_img.width() > self.frameGeometry().width(): #the image isn't drawing because you need to fix this
-                final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
-                print(final_height)
-                final_width = self.frameGeometry().width()
-                painter.drawPixmap(QRect(0,0,final_width,final_height),bg_img)
-            else:
-                painter.drawPixmap(QRect(0,0,bg_img.width(),bg_img.height()),bg_img)
+            if self.loaded_image:
+                if bg_img.width() > self.frameGeometry().width(): #the image isn't drawing because you need to fix this
+                    final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
+                    print(final_height)
+                    final_width = self.frameGeometry().width()
+                    painter.drawPixmap(QRect(0,0,final_width,final_height),bg_img)
+                else:
+                    painter.drawPixmap(QRect(0,0,bg_img.width(),bg_img.height()),bg_img)
                 #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
             #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
             for rect in self.rects:
@@ -284,6 +287,7 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         self.actionPen_Width.triggered.connect(self.changePenWidth)
         self.actionGitHub_Repository.triggered.connect(self.openGithub)
         self.actionAbout.triggered.connect(self.about)
+        self.actionOpen_image.triggered.connect(self.open)
 
         self.check_overlapping = False
 
@@ -292,18 +296,11 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
             self.table_widget.setColumnCount(4) 
 
         #self.resize(500, 500)
-    def makebigger(self):
-        '''
-        new_h = self.drawing_area.size().height() + 75
-        print(self.drawing_area.size().height())
-        print(new_h)
-        new_w = self.drawing_area.size().width() + 100
-        self.drawing_area.resize(new_w,new_h)
-        '''
-        print(self.table_widget.item(0,1).text())
     def updatetable(self):
         #i hate this
         #but i want to finish other functionality before turning to efficiency changes so here we are
+
+        #we rebuild the *entire* table on each call
         self.table_widget.setRowCount(0)
 
         for row_number in range(0,len(self.drawing_area.rects)):
@@ -345,13 +342,17 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
             #print("---")
     def removeLast(self):
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
-    def removedata(self):
-        self.table_widget.removeRow(3)
-        del self.drawing_area.rects[2]
-        self.drawing_area.drawallRects()
     def updateCoords(self,x,y):
         self.coord_label.setText("x:"+str(x)+" y:"+str(y))
     #region Actions
+    def open(self):
+        #if self.savePrompt():
+        if True:
+            fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
+                    QDir.currentPath())
+            if fileName:
+                self.drawing_area.loaded_image = fileName
+                self.drawing_area.drawallRects()
     def undo(self):
         self.drawing_area.undoLast()
         self.table_widget.removeRow(self.table_widget.rowCount()-1)#delete most recent table entry on undo
