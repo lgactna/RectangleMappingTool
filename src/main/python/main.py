@@ -59,6 +59,8 @@ import webbrowser
 import json
 import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
+#QImageWriter is currently unused but it's used for saving images
+#specifically, determining savable formats
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor
 from PyQt5.QtWidgets import (QColorDialog, QFileDialog,
                              QInputDialog, QMainWindow, QMessageBox, QWidget,
@@ -101,10 +103,9 @@ class ScribbleArea(QWidget):
 
         #instance attributes...
         #self.setAttribute(Qt.WA_StaticContents)
-        self.modified = False
         self.scribbling = False
-        self.pen_width = 1
-        self.pen_color = Qt.blue
+        self.default_pen_width = 1
+        self.default_pen_color = Qt.blue
         self.image = QImage()
         self.starting_point = QPoint()
         self.end_point = QPoint()
@@ -136,7 +137,6 @@ class ScribbleArea(QWidget):
         #also see qsize.scale()
         self.resize_image(loadedImage, new_size)
         self.image = loadedImage
-        self.modified = False
         self.update()
         return True
         '''
@@ -147,7 +147,6 @@ class ScribbleArea(QWidget):
         self.resize_image(visible_image, self.size())
 
         if visible_image.save(file_name, file_format):
-            self.modified = False
             return True
         else:
             return False
@@ -156,7 +155,6 @@ class ScribbleArea(QWidget):
         '''Clear the canvas.
         In the future, this might be changed such that the opened image is drawn here.'''
         self.image.fill(qRgb(255, 255, 255))
-        self.modified = True
         self.update()
 
     def undo_last(self):
@@ -218,7 +216,7 @@ class ScribbleArea(QWidget):
         '''
         self.clear_image()
         painter = QPainter(self.image)
-        painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine,
+        painter.setPen(QPen(self.default_pen_color, self.default_pen_width, Qt.SolidLine,
                             Qt.RoundCap, Qt.RoundJoin))
         #at this point we can redraw the image
         bg_img = QPixmap(self.loaded_image)
@@ -238,7 +236,6 @@ class ScribbleArea(QWidget):
         #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),bg_img)
         for rect in self.rects:
             painter.drawRect(rect)
-        self.modified = True
         self.update()
 
     def resize_image(self, image, new_size):
@@ -266,29 +263,25 @@ class ScribbleArea(QWidget):
             painter.drawImage(0, 0, self.image)
             painter.end()
 
-    #will probably just remove these later since we can just get drawing_area.pen_color and so on if we ever need these values...
+    #will probably just remove these later since we can just get drawing_area.default_pen_color and so on if we ever need these values...
     #but until then, to differentiate the method and the value, it stays camelcase
-    def isModified(self): # pylint: disable=invalid-name
-        '''Returns whether or not the canvas has been modified.
-        Unnecessary - will be removed later.'''
-        return self.modified
 
     def penColor(self): # pylint: disable=invalid-name
         '''Returns the default current pen color.'''
-        return self.pen_color
+        return self.default_pen_color
 
     def penWidth(self):  # pylint: disable=invalid-name
         '''Returns the current default pen width.'''
-        return self.pen_width
+        return self.default_pen_width
 
     #probably same with these
     def set_pen_color(self, new_color):
         '''Set a new default pen color for the canvas.'''
-        self.pen_color = new_color
+        self.default_pen_color = new_color
 
     def set_pen_width(self, new_width):
         '''Set a new default pen width for the canvas.'''
-        self.pen_width = new_width
+        self.default_pen_width = new_width
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     '''The main window. Instantiated once.'''
@@ -381,9 +374,27 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         `default_width (int)`: The default width of rectangles in pixels.'''
         #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
         self.settings[preference] = value
+        #rewrite as dict later?
+        if preference == "active_redraw":
+            pass
+        if preference == "":
+            pass
+
     def load_from_prefs(self):
-        '''Update self.settings based on values read from preferences.json.'''
+        '''Update self.settings based on values read from preferences.json.
+        Remove if the __init__ call becomes the only call.'''
         self.settings = get_prefs()
+
+        if self.settings['check_overlaps'] and self.settings['show_color']:
+            pass
+        elif self.settings['check_overlaps']:
+            pass
+        elif self.settings['show_overlaps']:
+            pass
+        else:
+            #maybe default column should be set to 3 in __init__?
+            #or the first condition should just do nothing...
+            pass
     def updatetable(self):
         '''Rebuild the entire table based on drawing_area.rects.'''
         #i hate this
