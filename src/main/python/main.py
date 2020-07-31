@@ -74,13 +74,18 @@ appctxt = ApplicationContext()
 #endregion imports
 
 class ScribbleArea(QWidget):
+    '''The primary canvas on which the user draws rectangles.
+    
+    Note that ScribbleArea is referred to as "the canvas" across (most) docstrings and comments.
+    This class may change to "CanvasArea" in the future to match.'''
     #these are custom signals that will not work if placed in __init__
-    #they must be class variables declared here
+    #they must be class variables/attributes declared here
     dataChanged = pyqtSignal()
     posChanged = pyqtSignal(int, int)
     def __init__(self, parent=None):
         super(ScribbleArea, self).__init__(parent)
 
+        #instance attributes...
         #self.setAttribute(Qt.WA_StaticContents)
         self.modified = False
         self.scribbling = False
@@ -89,6 +94,8 @@ class ScribbleArea(QWidget):
         self.image = QImage()
         self.starting_point = QPoint()
         self.end_point = QPoint()
+        #if colors will be implemented, then the structure will need to be modified
+        #perhaps each element can be an array of [QRect, (r,g,b)]
         self.rects = []
         self.loaded_image = None
 
@@ -98,6 +105,8 @@ class ScribbleArea(QWidget):
         self.real_time_rects = True
         self.real_time_table = False
     def open_image(self, file_name):
+        '''Open an external image and set it as the canvas background.
+        This should also calculate any necessary canvas/image size changes.'''
         new_image = QImage()
         print(new_image.size())
         
@@ -119,6 +128,7 @@ class ScribbleArea(QWidget):
         '''
 
     def save_image(self, file_name, file_format):
+        '''Save the image as the specified file name in the specified format.'''
         visible_image = self.image
         self.resize_image(visible_image, self.size())
 
@@ -245,19 +255,25 @@ class ScribbleArea(QWidget):
     #will probably just remove these later since we can just get drawing_area.pen_color and so on if we ever need these values...
     #but until then, to differentiate the method and the value, it stays camelcase
     def isModified(self): # pylint: disable=invalid-name
+        '''Returns whether or not the canvas has been modified.
+        Unnecessary - will be removed later.'''
         return self.modified
 
     def penColor(self): # pylint: disable=invalid-name
+        '''Returns the default current pen color.'''
         return self.pen_color
 
     def penWidth(self):  # pylint: disable=invalid-name
+        '''Returns the current default pen width.'''
         return self.pen_width
 
     #probably same with these
     def set_pen_color(self, new_color):
+        '''Set a new default pen color for the canvas.'''
         self.pen_color = new_color
 
     def set_pen_width(self, new_width):
+        '''Set a new default pen width for the canvas.'''
         self.pen_width = new_width
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
@@ -285,7 +301,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         left_layout.addWidget(self.drawing_area)
         left_layout.setAlignment(Qt.AlignHCenter)
         self.scrollAreaWidgetContents.setLayout(left_layout)
-        #we will need to set a signal later that resizes this widget based on a given background image 
+        #we will need to set a signal later that resizes this widget based on a given background image
         #(or we just directly resize it after calling open())
         self.drawing_area.setFixedSize(400, 300) 
         self.drawing_area.setCursor(QCursor(Qt.CrossCursor)) #make this responsive to a setting
@@ -303,6 +319,27 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.set_color_button.clicked.connect(self.change_pen_color)
         self.set_width_button.clicked.connect(self.change_pen_width)
 
+        #im not sure if there's a better way to do this lol
+        self.active_redraw_checkbox.toggled.connect(lambda: self.change_prefs("active_redraw", self.active_redraw_checkbox.isChecked()))
+        self.active_table_checkbox.toggled.connect(lambda: self.change_prefs("active_table", self.active_table_checkbox.isChecked()))
+        self.active_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("active_overlaps", self.active_redraw_checkbox.isChecked()))
+        self.check_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("check_overlaps", self.active_redraw_checkbox.isChecked()))
+        self.crop_image_checkbox.toggled.connect(lambda: self.change_prefs("crop_image", self.active_redraw_checkbox.isChecked()))
+        self.stretch_image_checkbox.toggled.connect(lambda: self.change_prefs("stretch_image", self.active_redraw_checkbox.isChecked()))
+        self.use_crosshair_checkbox.toggled.connect(lambda: self.change_prefs("use_crosshair", self.active_redraw_checkbox.isChecked()))
+        self.show_color_checkbox.toggled.connect(lambda: self.change_prefs("show_color", self.active_redraw_checkbox.isChecked()))
+
+        self.settings = {
+            "active_redraw":True,
+            "active_table":False,
+            "active_overlaps":False,
+            "check_overlaps":True,
+            "crop_image":False,
+            "stretch_image":False,
+            "use_crosshair":True,
+            "show_color":False
+        }
+        
         self.check_overlapping = False
 
         #this needs to be thrown into a function later
@@ -310,6 +347,20 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.table_widget.setColumnCount(4)
 
         #self.resize(500, 500)
+    def change_prefs(self, preference, value):
+        '''Change <preference> to <value> and perform additional actions as necessary.
+        
+        Available preferences (all bool):
+        active_redraw: (Re)draw the current rectangle during mousedown.
+        active_table: Update the table during mousedown.
+        active_overlaps: Calculate overlapping rectangles and update the table during mousedown.
+        check_overlaps: Calculate overlapping rectangles after a rectangle has been drawn.
+        crop_image: Crop loaded images to fit canvas (instead of upsizing the canvas to fit).
+        stretch_image: Stretch the image to fit canvas (instead of downsizing the canvas).
+        use_crosshair: Use a crosshair cursor instead of the standard pointer cursor.
+        show_color: Enable per-rectangle colors and add a "color" column to the table.'''
+        #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
+        print(preference, value)
     def updatetable(self):
         '''Rebuild the entire table based on drawing_area.rects.'''
         #i hate this
@@ -327,6 +378,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.table_widget.setItem(row_number, 2, QTableWidgetItem(str(coords[2])))
             self.table_widget.setItem(row_number, 3, QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
             self.table_widget.setItem(row_number, 4, QTableWidgetItem(""))
+            self.table_widget.setItem(row_number, 5, QTableWidgetItem(""))#we can add the color property later
 
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
@@ -462,6 +514,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     '''
 
 class AppContext(ApplicationContext):
+    '''fbs requires that one instance of ApplicationContext be instantiated.
+    This represents the app window.'''
     def run(self):
         application_window = ApplicationWindow()
         application_window.show()
