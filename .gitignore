@@ -4,3 +4,4 @@
 src/main/python/example.py
 src/main/python/qttableex.py
 src/main/python/__pycache__
+.pylintrc

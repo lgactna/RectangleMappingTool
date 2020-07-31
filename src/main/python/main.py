@@ -42,36 +42,28 @@
 ##
 #############################################################################
 
-#ScribbleArea is a minimally modified version of the Scribble example that draws rectangles and adds undo functionality. The notice above is kept as a result.
+#ScribbleArea is a modified version of the Scribble example.
+#The notice above is kept as a result.
 
 #endregion licensing
 
-#region todo
-'''process:
-introduction
-user loads an image (or doesn't)
-user draws pretty rectangles
-user defines top-left and lower-right equivalents (or doesn't, in which case the existing values are sent to the final step)
-set drawing area and label to 0 size, add columns to table defining the new regions (gps coordinates, in our case)
-allow user to define f-string
-allow user to export table values as a .csv (and .txt for f-string)
-
----
-implement functionality allowing user to import a .csv, stripping the values from that
-'''
-#endregion
-
 #region imports
 #i *would* convert these to asterisks but then pylint makes my document look like a bloodbath
+#well the document is a bloodbath as is but i'll fix the camelcase vs snakecase later
+#and everything else...
+
+#https://stackoverflow.com/questions/3615125/should-wildcard-import-be-avoided
+#perhaps this should be changed later
+import sys
+import webbrowser
 import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor
-from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QFileDialog,
-        QInputDialog, QMainWindow, QMenu, QMessageBox, QWidget, QTableWidgetItem, QGridLayout, QVBoxLayout)
+from PyQt5.QtWidgets import (QColorDialog, QFileDialog,
+                             QInputDialog, QMainWindow, QMessageBox, QWidget,
+                             QTableWidgetItem, QVBoxLayout)
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
-import sys
-import webbrowser
 #------
 from rectmap import Ui_MainWindow
 #------
@@ -82,117 +74,115 @@ appctxt = ApplicationContext()
 #endregion imports
 
 class ScribbleArea(QWidget):
-    #this is a custom signal
-    #it must be a class variable; it won't work if placed in __init__
+    #these are custom signals that will not work if placed in __init__
+    #they must be class variables declared here
     dataChanged = pyqtSignal()
-    posChanged = pyqtSignal(int,int)
+    posChanged = pyqtSignal(int, int)
     def __init__(self, parent=None):
         super(ScribbleArea, self).__init__(parent)
 
         #self.setAttribute(Qt.WA_StaticContents)
         self.modified = False
         self.scribbling = False
-        self.myPenWidth = 1
-        self.myPenColor = Qt.blue
+        self.pen_width = 1
+        self.pen_color = Qt.blue
         self.image = QImage()
-        self.startingPoint = QPoint()
-        self.endPoint = QPoint()
+        self.starting_point = QPoint()
+        self.end_point = QPoint()
         self.rects = []
         self.loaded_image = None
 
-        #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed. 
+        #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed.
         #This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
         self.real_time_rects = True
         self.real_time_table = False
-    def openImage(self, fileName):
+    def open_image(self, file_name):
         new_image = QImage()
         print(new_image.size())
         
-        self.loaded_image = fileName
-        self.drawallRects()
+        self.loaded_image = file_name
+        self.draw_all_rects()
         '''
         loadedImage = QImage()
-        if not loadedImage.load(fileName):
+        if not loadedImage.load(file_name):
             return False
 
-        newSize = loadedImage.size().expandedTo(self.size()) #returns the maximum height and width given the two sizes
+        #returns the maximum height and width given the two sizes
+        new_size = loadedImage.size().expandedTo(self.size())
         #also see qsize.scale()
-        self.resizeImage(loadedImage, newSize)
+        self.resize_image(loadedImage, new_size)
         self.image = loadedImage
         self.modified = False
         self.update()
         return True
         '''
 
-    def saveImage(self, fileName, fileFormat):
-        visibleImage = self.image
-        self.resizeImage(visibleImage, self.size())
+    def save_image(self, file_name, file_format):
+        visible_image = self.image
+        self.resize_image(visible_image, self.size())
 
-        if visibleImage.save(fileName, fileFormat):
+        if visible_image.save(file_name, file_format):
             self.modified = False
             return True
         else:
             return False
 
-    def setPenColor(self, newColor):
-        self.myPenColor = newColor
-
-    def setPenWidth(self, newWidth):
-        self.myPenWidth = newWidth
-
-    def clearImage(self):
+    def clear_image(self):
+        '''Clear the canvas.
+        In the future, this might be changed such that the opened image is drawn here.'''
         self.image.fill(qRgb(255, 255, 255))
         self.modified = True
         self.update()
 
-    def undoLast(self):
-        try:
-            self.clearImage()
-            del self.rects[-1]
-            self.drawallRects()
-            #we also need to update the table here
-        except Exception as e:
-            print(e)
+    def undo_last(self):
+        '''Delete the most recent rectangle and redraw the canvas.'''
+        self.clear_image()
+        del self.rects[-1]
+        self.draw_all_rects()
+        #we also need to update the table here
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event): # pylint: disable=invalid-name
         if event.button() == Qt.LeftButton:
-            self.startingPoint = event.pos()
+            self.starting_point = event.pos()
             self.scribbling = True
 
-    def mouseMoveEvent(self, event):
-        self.posChanged.emit(event.pos().x(),event.pos().y())
+    def mouseMoveEvent(self, event): # pylint: disable=invalid-name
+        self.posChanged.emit(event.pos().x(), event.pos().y())
         if (event.buttons() & Qt.LeftButton) and self.scribbling:
             if self.real_time_rects:
-                self.rects.append(QRect(self.startingPoint,event.pos()))
-                self.drawallRects()
+                self.rects.append(QRect(self.starting_point, event.pos()))
+                self.draw_all_rects()
                 if self.real_time_table:
                     self.dataChanged.emit() #this is used for "real-time" table updates
                 del self.rects[-1]
-    def mouseReleaseEvent(self, event):
+
+    def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
         if event.button() == Qt.LeftButton and self.scribbling:
-            self.endPoint = event.pos()
+            self.end_point = event.pos()
             self.scribbling = False
-            self.rects.append(QRect(self.startingPoint, self.endPoint))
+            self.rects.append(QRect(self.starting_point, self.end_point))
             #here we should also add this data to the table and update it
             self.dataChanged.emit() #this says that the rectangle data has changed
-            self.drawallRects()
+            self.draw_all_rects()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event): # pylint: disable=invalid-name
         painter = QPainter(self)
-        dirtyRect = event.rect()
-        painter.drawImage(dirtyRect, self.image, dirtyRect)
+        dirty_rect = event.rect()
+        painter.drawImage(dirty_rect, self.image, dirty_rect)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event): # pylint: disable=invalid-name
         if self.width() > self.image.width() or self.height() > self.image.height():
-            newWidth = max(self.width() + 128, self.image.width())
-            newHeight = max(self.height() + 128, self.image.height())
-            self.resizeImage(self.image, QSize(newWidth, newHeight))
+            new_width = max(self.width() + 128, self.image.width())
+            new_height = max(self.height() + 128, self.image.height())
+            self.resize_image(self.image, QSize(new_width, new_height))
             self.update()
 
         super(ScribbleArea, self).resizeEvent(event)
 
-    def drawallRects(self):
+    def draw_all_rects(self):
+        '''Redraw all rectangles, iterating over each rectangle object in self.rects.'''
+        ####
         '''
         is very inefficient because we don't just update the thing - no, we redraw *everything*
         a better way of doing this (i believe) is to use QGraphicsView since we don't need to store (and redraw) elements - it's done for us
@@ -202,49 +192,47 @@ class ScribbleArea(QWidget):
 
         so maybe one day i'll refactor this but for now this is good enough without absolutely shredding through resources
         '''
-        try:
-            self.clearImage()
-            painter = QPainter(self.image)
-            painter.setPen(QPen(self.myPenColor, self.myPenWidth, Qt.SolidLine,
-                    Qt.RoundCap, Qt.RoundJoin))
-            #at this point we can redraw the image
-            bg_img = QPixmap(self.loaded_image)
-            #print(bg_img.height())
-           # print(bg_img.width())
-            #bg_img_width = bg_img.width()
-            #bg_img_height = bg_img.height()
-            if self.loaded_image:
-                if bg_img.width() > self.frameGeometry().width(): #the image isn't drawing because you need to fix this
-                    final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
-                    print(final_height)
-                    final_width = self.frameGeometry().width()
-                    painter.drawPixmap(QRect(0,0,final_width,final_height),bg_img)
-                else:
-                    painter.drawPixmap(QRect(0,0,bg_img.width(),bg_img.height()),bg_img)
-                #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
-            #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
-            for rect in self.rects:
-                painter.drawRect(rect)
-            self.modified = True
-            self.update()
-        except Exception as e:
-            print(e)
+        self.clear_image()
+        painter = QPainter(self.image)
+        painter.setPen(QPen(self.pen_color, self.pen_width, Qt.SolidLine,
+                            Qt.RoundCap, Qt.RoundJoin))
+        #at this point we can redraw the image
+        bg_img = QPixmap(self.loaded_image)
+        #print(bg_img.height())
+        # print(bg_img.width())
+        #bg_img_width = bg_img.width()
+        #bg_img_height = bg_img.height()
+        if self.loaded_image:
+            if bg_img.width() > self.frameGeometry().width(): #the image isn't drawing because you need to fix this
+                final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
+                print(final_height)
+                final_width = self.frameGeometry().width()
+                painter.drawPixmap(QRect(0, 0, final_width, final_height), bg_img)
+            else:
+                painter.drawPixmap(QRect(0, 0, bg_img.width(), bg_img.height()), bg_img)
+            #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
+        #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
+        for rect in self.rects:
+            painter.drawRect(rect)
+        self.modified = True
+        self.update()
 
-    def resizeImage(self, image, newSize):
-        if image.size() == newSize:
+    def resize_image(self, image, new_size):
+        if image.size() == new_size:
             return
 
-        newImage = QImage(newSize, QImage.Format_RGB32)
-        newImage.fill(qRgb(255, 255, 255))
-        painter = QPainter(newImage)
+        new_image = QImage(new_size, QImage.Format_RGB32)
+        new_image.fill(qRgb(255, 255, 255))
+        painter = QPainter(new_image)
         painter.drawImage(QPoint(0, 0), image)
-        self.image = newImage
+        self.image = new_image
 
     def print_(self):
+        '''Handles canvas printing via QPrintDialog.'''
         printer = QPrinter(QPrinter.HighResolution)
 
-        printDialog = QPrintDialog(printer, self)
-        if printDialog.exec_() == QPrintDialog.Accepted:
+        print_dialog = QPrintDialog(printer, self)
+        if print_dialog.exec_() == QPrintDialog.Accepted:
             painter = QPainter(printer)
             rect = painter.viewport()
             size = self.image.size()
@@ -254,16 +242,25 @@ class ScribbleArea(QWidget):
             painter.drawImage(0, 0, self.image)
             painter.end()
 
-    def isModified(self):
+    #will probably just remove these later since we can just get drawing_area.pen_color and so on if we ever need these values...
+    #but until then, to differentiate the method and the value, it stays camelcase
+    def isModified(self): # pylint: disable=invalid-name
         return self.modified
 
-    def penColor(self):
-        return self.myPenColor
+    def penColor(self): # pylint: disable=invalid-name
+        return self.pen_color
 
-    def penWidth(self):
-        return self.myPenWidth
+    def penWidth(self):  # pylint: disable=invalid-name
+        return self.pen_width
 
-class ApplicationWindow(QMainWindow,Ui_MainWindow):
+    #probably same with these
+    def set_pen_color(self, new_color):
+        self.pen_color = new_color
+
+    def set_pen_width(self, new_width):
+        self.pen_width = new_width
+
+class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
         PyQt5.QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
@@ -288,45 +285,48 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         left_layout.addWidget(self.drawing_area)
         left_layout.setAlignment(Qt.AlignHCenter)
         self.scrollAreaWidgetContents.setLayout(left_layout)
-        self.drawing_area.setFixedSize(400,300) #we will need to set a signal later that resizes this widget based on a given background image (or we just directly resize it after calling open())
+        #we will need to set a signal later that resizes this widget based on a given background image 
+        #(or we just directly resize it after calling open())
+        self.drawing_area.setFixedSize(400, 300) 
         self.drawing_area.setCursor(QCursor(Qt.CrossCursor)) #make this responsive to a setting
 
         self.drawing_area.dataChanged.connect(self.updatetable)
-        self.drawing_area.posChanged.connect(self.updateCoords)
+        self.drawing_area.posChanged.connect(self.update_coords)
 
         self.actionUndo.triggered.connect(self.undo)
-        self.actionPen_Color.triggered.connect(self.changePenColor)
-        self.actionPen_Width.triggered.connect(self.changePenWidth)
-        self.actionGitHub_Repository.triggered.connect(self.openGithub)
+        self.actionPen_Color.triggered.connect(self.change_pen_color)
+        self.actionPen_Width.triggered.connect(self.change_pen_width)
+        self.actionGitHub_Repository.triggered.connect(self.open_github)
         self.actionAbout.triggered.connect(self.about)
         self.actionOpen_image.triggered.connect(self.open)
 
-        self.set_color_button.clicked.connect(self.changePenColor)
-        self.set_width_button.clicked.connect(self.changePenWidth)
+        self.set_color_button.clicked.connect(self.change_pen_color)
+        self.set_width_button.clicked.connect(self.change_pen_width)
 
         self.check_overlapping = False
 
         #this needs to be thrown into a function later
         if not self.check_overlapping:
-            self.table_widget.setColumnCount(4) 
+            self.table_widget.setColumnCount(4)
 
         #self.resize(500, 500)
     def updatetable(self):
+        '''Rebuild the entire table based on drawing_area.rects.'''
         #i hate this
         #but i want to finish other functionality before turning to efficiency changes so here we are
 
         #we rebuild the *entire* table on each call
         self.table_widget.setRowCount(0)
 
-        for row_number in range(0,len(self.drawing_area.rects)):
+        for row_number in range(0, len(self.drawing_area.rects)):
             coords = self.drawing_area.rects[row_number].getCoords()
             #print("adding row %s" % str(int(row_number)+1))
-            self.table_widget.setRowCount(row_number+1) 
-            self.table_widget.setItem(row_number,0,QTableWidgetItem(str(coords[0])))
-            self.table_widget.setItem(row_number,1,QTableWidgetItem(str(coords[1])))
-            self.table_widget.setItem(row_number,2,QTableWidgetItem(str(coords[2])))
-            self.table_widget.setItem(row_number,3,QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
-            self.table_widget.setItem(row_number,4,QTableWidgetItem(""))
+            self.table_widget.setRowCount(row_number+1)
+            self.table_widget.setItem(row_number, 0, QTableWidgetItem(str(coords[0])))
+            self.table_widget.setItem(row_number, 1, QTableWidgetItem(str(coords[1])))
+            self.table_widget.setItem(row_number, 2, QTableWidgetItem(str(coords[2])))
+            self.table_widget.setItem(row_number, 3, QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
+            self.table_widget.setItem(row_number, 4, QTableWidgetItem(""))
 
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
@@ -336,71 +336,97 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
             #we clear the entire column on each full overlap check
             #while implementing an array for each cell would be much better for various calculations and operations
             #maybe later
-            for row_number in range(0,len(rectangles)):
-                self.table_widget.setItem(row_number,4,QTableWidgetItem(""))
-            for rect1_index in range(0,len(rectangles)):
-                for rect2_index in range(rect1_index+1,len(rectangles)):
+            for row_number in range(0, len(rectangles)):
+                self.table_widget.setItem(row_number, 4, QTableWidgetItem(""))
+            for rect1_index in range(0, len(rectangles)):
+                for rect2_index in range(rect1_index+1, len(rectangles)):
                     intersects = rectangles[rect1_index].intersects(rectangles[rect2_index])
                     #print(rectangles[rect1_index].intersects(rectangles[rect2_index]))
                     #print(f"Rectangle {rect1_index} overlaps with {rect2_index}?"+str(intersects))
-                    current = self.table_widget.item(rect1_index,4).text()
-                    current2 = self.table_widget.item(rect2_index,4).text()
+                    current = self.table_widget.item(rect1_index, 4).text()
+                    current2 = self.table_widget.item(rect2_index, 4).text()
                     if intersects:
                         if current == "":
-                            self.table_widget.setItem(rect1_index,4,QTableWidgetItem(str(rect2_index+1)))
+                            self.table_widget.setItem(rect1_index, 4,
+                                                      QTableWidgetItem(str(rect2_index+1)))
                         else:
-                            self.table_widget.setItem(rect1_index,4,QTableWidgetItem(current+","+str(rect2_index+1)))
+                            self.table_widget.setItem(rect1_index, 4,
+                                                      QTableWidgetItem(current+","+str(rect2_index+1)))
                         if current2 == "":
-                            self.table_widget.setItem(rect2_index,4,QTableWidgetItem(str(rect1_index+1)))
+                            self.table_widget.setItem(rect2_index, 4,
+                                                      QTableWidgetItem(str(rect1_index+1)))
                         else:
-                            self.table_widget.setItem(rect2_index,4,QTableWidgetItem(current+","+str(rect1_index+1)))
+                            self.table_widget.setItem(rect2_index, 4,
+                                                      QTableWidgetItem(current+","+str(rect1_index+1)))
             #print("---")
-    def removeLast(self):
+    def remove_last(self):
+        '''Remove the most recently added row.'''
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
-    def updateCoords(self,x,y):
-        self.coord_label.setText("x:"+str(x)+" y:"+str(y))
+    def update_coords(self, x_pos, y_pos):
+        '''Update the coordinate labels below the canvas.'''
+        self.coord_label.setText("x:"+str(x_pos)+" y:"+str(y_pos))
     #region Actions
     def open(self):
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open File",
-                QDir.currentPath())
-        if fileName:
-            if not QImage().load(fileName):
+        '''Handles opening an image.
+        This includes the creation of a QFileDialog and determining if an image is valid.
+        It will also ask the user if they want to clear the canvas on image load.'''
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open File",
+                                                   QDir.currentPath())
+        if file_name:
+            if not QImage().load(file_name):
                 QMessageBox.critical(self, "Couldn't load image",
-                            "This image appears to be an unsupported filetype and could not be loaded.",
-                            QMessageBox.Ok)
+                                     "This image appears to be an unsupported filetype and could not be loaded.",
+                                     QMessageBox.Ok)
                 self.open()
             else:
                 if self.drawing_area.rects:
                     response = QMessageBox.question(self, "Reset drawing area?",
-                            'Do you want to clear drawn rectangles and start from scratch?',
-                            QMessageBox.Yes | QMessageBox.No)
+                                                    'Do you want to clear drawn rectangles and start from scratch?',
+                                                    QMessageBox.Yes | QMessageBox.No)
                     if response == QMessageBox.Yes:
                         self.drawing_area.rects = []
                         self.updatetable()
-                self.drawing_area.openImage(fileName)
+                self.drawing_area.open_image(file_name)
+                #at this point, we should execute the resize logic
     def undo(self):
-        self.drawing_area.undoLast()
-        self.table_widget.removeRow(self.table_widget.rowCount()-1)#delete most recent table entry on undo
-    def changePenColor(self):
-        newColor = QColorDialog.getColor(self.drawing_area.penColor())
-        print(newColor.getRgb()) #returns a standard rgba tuple
-        print(newColor.getRgb()[2])
-        if newColor.isValid():
-            self.drawing_area.setPenColor(newColor)
-    def changePenWidth(self):
-        newWidth, ok = QInputDialog.getInt(self, "Set New Pen Width",
-                "Select pen width:", self.drawing_area.penWidth(), 1, 50, 1)
-        if ok:
-            self.drawing_area.setPenWidth(newWidth)
+        '''Tell the canvas to remove the most recent rectangle.
+        Also updates the coordinate table.'''
+        self.drawing_area.undo_last()
+        #delete most recent table entry on undo
+        self.table_widget.removeRow(self.table_widget.rowCount()-1)
+    def change_pen_color(self):
+        '''Open a dialog allowing the user to change the default rectangle color.'''
+        new_color = QColorDialog.getColor(self.drawing_area.penColor())
+        print(new_color.getRgb()) #returns a standard rgba tuple
+        print(new_color.getRgb()[2])
+        if new_color.isValid():
+            self.drawing_area.set_pen_color(new_color)
+    def change_pen_width(self):
+        '''Open a dialog allowing the user to change the default rectangle width.'''
+        new_width, response = QInputDialog.getInt(self, "Set New Pen Width",
+                                                  "Select pen width:", 
+                                                  self.drawing_area.penWidth(), 1, 50, 1)
+        if response:
+            self.drawing_area.set_pen_width(new_width)
     def about(self):
+        '''Opens this program's about dialog.'''
         QMessageBox.about(self, "About RectangleMappingTool",
-                '<p>RectangleMappingTool is a program designed for the <a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, built with PyQt5 and packaged through fbs.</p>'
-                '<p>Its primary purpose is to make creating rectangular bounding regions based on an image easier.</p>'
-                '<p>You can view the source of this program and additional information <a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
-    def openGithub(self):
+                '<p>RectangleMappingTool is a program designed for the'
+                '<a href="https://github.com/aacttelemetry">AACT Telemetry project</a>,'
+                'built with PyQt5 and packaged through fbs.</p>'
+                '<p>Its primary purpose is to make creating rectangular bounding regions'
+                'based on an image easier.</p>'
+                '<p>You can view the source of this program and additional information'
+                '<a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
+    def open_github(self):
+        '''Opens this program's repo in the user's default browser.'''
         webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
     #endregion
-    def closeprompt(self):
+    def close_prompt(self):
+        '''Warns the user if the canvas has been modified.
+        This is determined by the presence of any rectangles.
+        Returns True if the user wants to close the program anyways.
+        Returns False otherwise.'''
         #because "saving" could mean anything from exporting the coords to saving the image
         #there is no handling of saving here
         #a modified drawing_area is one that has any rectangles whatsoever
@@ -408,39 +434,40 @@ class ApplicationWindow(QMainWindow,Ui_MainWindow):
         #if this ends up being just a pre-close prompt, change the language accordingly
         if self.drawing_area.rects:
             ret = QMessageBox.information(self, "RectangleMappingTool",
-                        'Ensure that you have exported or saved any data you were working with.\n'
-                        'Click "Close" to continue, or "Cancel" to return.',
-                        QMessageBox.Close | QMessageBox.Cancel)
+                                          'Ensure that you have exported or saved any data'
+                                          'you were working with.\n'
+                                          'Click "Close" to continue, or "Cancel" to return.',
+                                          QMessageBox.Close | QMessageBox.Cancel)
             if ret == QMessageBox.Close:
                 return True
             elif ret == QMessageBox.Cancel:
                 return False
         else:
             return True
-    def closeEvent(self, event):
-        if self.closeprompt():
+    def closeEvent(self, event): # pylint: disable=invalid-name
+        if self.close_prompt():
             event.accept()
         else:
             event.ignore()
 '''
-    def saveFile(self, fileFormat):
-        initialPath = QDir.currentPath() + '/untitled.' + fileFormat
+    def saveFile(self, file_format):
+        initialPath = QDir.currentPath() + '/untitled.' + file_format
 
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save As", initialPath,
-                "%s Files (*.%s);;All Files (*)" % (fileFormat.upper(), fileFormat))
-        if fileName:
-            return self.scribbleArea.saveImage(fileName, fileFormat)
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save As", initialPath,
+                "%s Files (*.%s);;All Files (*)" % (file_format.upper(), file_format))
+        if file_name:
+            return self.scribbleArea.save_image(file_name, file_format)
 
         return False
     '''
 
-class AppContext(ApplicationContext):          
-    def run(self):                              
-        aw = ApplicationWindow()
-        aw.show()
-        return self.app.exec_()                 
+class AppContext(ApplicationContext):
+    def run(self):
+        application_window = ApplicationWindow()
+        application_window.show()
+        return self.app.exec_()
 
 if __name__ == '__main__':
-    appctxt = AppContext()                    
-    exit_code = appctxt.run()          
+    appctxt = AppContext()
+    exit_code = appctxt.run()
     sys.exit(exit_code)
