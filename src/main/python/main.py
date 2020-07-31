@@ -42,7 +42,7 @@
 ##
 #############################################################################
 
-#ScribbleArea is a modified version of the Scribble example.
+#This program is a modified version of the Scribble example.
 #The notice above is kept as a result.
 
 #endregion licensing
@@ -56,6 +56,7 @@
 #perhaps this should be changed later
 import sys
 import webbrowser
+import json
 import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor
@@ -68,10 +69,23 @@ from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from rectmap import Ui_MainWindow
 #------
 appctxt = ApplicationContext()
-#no need for this since we can load images now
-#consider deleting rovercourse.png and associated references to below in the future
-#imgpath = appctxt.get_resource('rovercourse.png')#gets relative/absolute path through fbs
+prefpath = appctxt.get_resource('preferences.json')
 #endregion imports
+
+def get_prefs():
+    '''Get `data` from preferences.json.
+    Returns a standard Python dict.'''
+    pref_file = open(prefpath)
+    data = json.load(pref_file)
+    pref_file.close()
+    return data
+
+def write_prefs(data):
+    '''Write `data` to preferences.json with 4-space indents.
+    `data` is a standard Python dict, likely the result of get_prefs().'''
+    pref_file = open(prefpath, "w+") #write and truncate
+    pref_file.write(json.dumps(data, indent=4))
+    pref_file.close()
 
 class ScribbleArea(QWidget):
     '''The primary canvas on which the user draws rectangles.
@@ -221,7 +235,7 @@ class ScribbleArea(QWidget):
             else:
                 painter.drawPixmap(QRect(0, 0, bg_img.width(), bg_img.height()), bg_img)
             #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
-        #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),QPixmap(imgpath))
+        #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),bg_img)
         for rect in self.rects:
             painter.drawRect(rect)
         self.modified = True
@@ -277,6 +291,7 @@ class ScribbleArea(QWidget):
         self.pen_width = new_width
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
+    '''The main window. Instantiated once.'''
     def __init__(self):
         PyQt5.QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
@@ -329,6 +344,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.use_crosshair_checkbox.toggled.connect(lambda: self.change_prefs("use_crosshair", self.active_redraw_checkbox.isChecked()))
         self.show_color_checkbox.toggled.connect(lambda: self.change_prefs("show_color", self.active_redraw_checkbox.isChecked()))
 
+        #Default settings.
         self.settings = {
             "active_redraw":True,
             "active_table":False,
@@ -337,30 +353,37 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             "crop_image":False,
             "stretch_image":False,
             "use_crosshair":True,
-            "show_color":False
+            "show_color":False,
+            "default_color":[0, 0, 255, 255],
+            "default_width":1
         }
-        
-        self.check_overlapping = False
 
-        #this needs to be thrown into a function later
-        if not self.check_overlapping:
+        self.load_from_prefs()
+
+        #this needs to be thrown into a function later, especially if color is a thing
+        if not self.settings['check_overlaps']:
             self.table_widget.setColumnCount(4)
 
         #self.resize(500, 500)
     def change_prefs(self, preference, value):
-        '''Change <preference> to <value> and perform additional actions as necessary.
-        
-        Available preferences (all bool):
-        active_redraw: (Re)draw the current rectangle during mousedown.
-        active_table: Update the table during mousedown.
-        active_overlaps: Calculate overlapping rectangles and update the table during mousedown.
-        check_overlaps: Calculate overlapping rectangles after a rectangle has been drawn.
-        crop_image: Crop loaded images to fit canvas (instead of upsizing the canvas to fit).
-        stretch_image: Stretch the image to fit canvas (instead of downsizing the canvas).
-        use_crosshair: Use a crosshair cursor instead of the standard pointer cursor.
-        show_color: Enable per-rectangle colors and add a "color" column to the table.'''
+        '''Change `preference` to `value` and perform additional actions as necessary.
+        This includes updating preferences.json.\n
+        Available preferences (all `bool`, except the last two):\n
+        `active_redraw`: (Re)draw the current rectangle during mousedown.\n
+        `active_table`: Update the table during mousedown.\n
+        `active_overlaps`: Calculate overlapping rectangles and update the table during mousedown.\n
+        `check_overlaps`: Calculate overlapping rectangles after a rectangle has been drawn.\n
+        `crop_image`: Crop loaded images to fit canvas (instead of upsizing the canvas to fit).\n
+        `stretch_image`: Stretch the image to fit canvas (instead of downsizing the canvas).\n
+        `use_crosshair`: Use a crosshair cursor instead of the standard pointer cursor.\n
+        `show_color`: Enable per-rectangle colors and add a "color" column to the table.\n
+        `default_color (list)`: The default color used for drawing rectangles, represented by an rgba array.\n
+        `default_width (int)`: The default width of rectangles in pixels.'''
         #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
-        print(preference, value)
+        self.settings[preference] = value
+    def load_from_prefs(self):
+        '''Update self.settings based on values read from preferences.json.'''
+        self.settings = get_prefs()
     def updatetable(self):
         '''Rebuild the entire table based on drawing_area.rects.'''
         #i hate this
@@ -383,7 +406,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         #we can perform brute-force checking with QRect.intersects(<QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
         #add an "overlaps with" column if this is enabled
-        if self.check_overlapping:
+        if self.settings['check_overlaps']:
             rectangles = self.drawing_area.rects
             #we clear the entire column on each full overlap check
             #while implementing an array for each cell would be much better for various calculations and operations
@@ -456,19 +479,19 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def change_pen_width(self):
         '''Open a dialog allowing the user to change the default rectangle width.'''
         new_width, response = QInputDialog.getInt(self, "Set New Pen Width",
-                                                  "Select pen width:", 
+                                                  "Select pen width:",
                                                   self.drawing_area.penWidth(), 1, 50, 1)
         if response:
             self.drawing_area.set_pen_width(new_width)
     def about(self):
         '''Opens this program's about dialog.'''
         QMessageBox.about(self, "About RectangleMappingTool",
-                '<p>RectangleMappingTool is a program designed for the'
-                '<a href="https://github.com/aacttelemetry">AACT Telemetry project</a>,'
+                '<p>RectangleMappingTool is a program designed for the '
+                '<a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, '
                 'built with PyQt5 and packaged through fbs.</p>'
-                '<p>Its primary purpose is to make creating rectangular bounding regions'
+                '<p>Its primary purpose is to make creating rectangular bounding regions '
                 'based on an image easier.</p>'
-                '<p>You can view the source of this program and additional information'
+                '<p>You can view the source of this program and additional information '
                 '<a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
     def open_github(self):
         '''Opens this program's repo in the user's default browser.'''
@@ -477,7 +500,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def close_prompt(self):
         '''Warns the user if the canvas has been modified.
         This is determined by the presence of any rectangles.
-        Returns True if the user wants to close the program anyways.
+        Returns True if the user wants to close the program anyways or no rectangles have been drawn.
         Returns False otherwise.'''
         #because "saving" could mean anything from exporting the coords to saving the image
         #there is no handling of saving here
@@ -486,7 +509,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         #if this ends up being just a pre-close prompt, change the language accordingly
         if self.drawing_area.rects:
             ret = QMessageBox.information(self, "RectangleMappingTool",
-                                          'Ensure that you have exported or saved any data'
+                                          'Ensure that you have exported or saved any data '
                                           'you were working with.\n'
                                           'Click "Close" to continue, or "Cancel" to return.',
                                           QMessageBox.Close | QMessageBox.Cancel)
@@ -497,6 +520,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         else:
             return True
     def closeEvent(self, event): # pylint: disable=invalid-name
+        '''Reimplementation of the close event to warn the user on program close.
+        See close_prompt().'''
         if self.close_prompt():
             event.accept()
         else:
