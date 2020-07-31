@@ -74,6 +74,29 @@ appctxt = ApplicationContext()
 prefpath = appctxt.get_resource('preferences.json')
 #endregion imports
 
+'''todo (vaguely in this order):
+        full settings implementation (logic)
+        disable "change color" button if disabled
+        forced resize option (define custom canvas area, preload)
+        resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
+        resize logic post image load
+        conversion table
+        csv export
+        custom ordering of csv with qlistwidget
+        fstring export
+        edit table values and update accordingly
+        custom fields
+        update coordinate table upper-left labels on draw finish
+        highlight row on draw finish
+        click row (or row element) to show rectangle info
+        click row (or row element) to highlight associated rectangle in some way
+        right-click custom context menu
+        toolbar (if needed)
+        make undo work to not just delete rectangles, but undo other actions (or drop entirely)
+        unbreak the overlap system
+        unbreak the draw system
+'''
+
 def get_prefs():
     '''Get `data` from preferences.json.
     Returns a standard Python dict.'''
@@ -119,6 +142,13 @@ class ScribbleArea(QWidget):
         self.setMouseTracking(True)
         self.real_time_rects = True
         self.real_time_table = False
+
+        self.settings ={
+            "real_time_rects": True,
+            "real_time_table": False,
+            "crop_large_images": False,
+            "stretch_small_images": False
+        }
     def open_image(self, file_name):
         '''Open an external image and set it as the canvas background.
         This should also calculate any necessary canvas/image size changes.'''
@@ -330,12 +360,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         #im not sure if there's a better way to do this lol
         self.active_redraw_checkbox.toggled.connect(lambda: self.change_prefs("active_redraw", self.active_redraw_checkbox.isChecked()))
         self.active_table_checkbox.toggled.connect(lambda: self.change_prefs("active_table", self.active_table_checkbox.isChecked()))
-        self.active_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("active_overlaps", self.active_redraw_checkbox.isChecked()))
-        self.check_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("check_overlaps", self.active_redraw_checkbox.isChecked()))
-        self.crop_image_checkbox.toggled.connect(lambda: self.change_prefs("crop_image", self.active_redraw_checkbox.isChecked()))
-        self.stretch_image_checkbox.toggled.connect(lambda: self.change_prefs("stretch_image", self.active_redraw_checkbox.isChecked()))
-        self.use_crosshair_checkbox.toggled.connect(lambda: self.change_prefs("use_crosshair", self.active_redraw_checkbox.isChecked()))
-        self.show_color_checkbox.toggled.connect(lambda: self.change_prefs("show_color", self.active_redraw_checkbox.isChecked()))
+        self.active_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("active_overlaps", self.active_overlaps_checkbox.isChecked()))
+        self.check_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("check_overlaps", self.check_overlaps_checkbox.isChecked()))
+        self.crop_image_checkbox.toggled.connect(lambda: self.change_prefs("crop_image", self.crop_image_checkbox.isChecked()))
+        self.stretch_image_checkbox.toggled.connect(lambda: self.change_prefs("stretch_image", self.stretch_image_checkbox.isChecked()))
+        self.use_crosshair_checkbox.toggled.connect(lambda: self.change_prefs("use_crosshair", self.use_crosshair_checkbox.isChecked()))
+        self.show_color_checkbox.toggled.connect(lambda: self.change_prefs("show_color", self.show_color_checkbox.isChecked()))
 
         #Default settings.
         self.settings = {
@@ -376,9 +406,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.settings[preference] = value
         #rewrite as dict later?
         if preference == "active_redraw":
-            pass
-        if preference == "":
-            pass
+            self.drawing_area.real_time_rects = value
+        if preference == "active_table":
+            self.drawing_area.real_time_table = value
+        if preference == "use_crosshair":
+            if value:
+                self.drawing_area.setCursor(QCursor(Qt.CrossCursor))
+            else:
+                self.drawing_area.setCursor(QCursor(Qt.ArrowCursor))
+
+        write_prefs(self.settings)
 
     def load_from_prefs(self):
         '''Update self.settings based on values read from preferences.json.
