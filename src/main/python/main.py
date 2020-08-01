@@ -297,6 +297,7 @@ class ScribbleArea(QtWidgets.QWidget):
 
     #will probably just remove these later since we can just get drawing_area.settings['default_pen_color'] and so on if we ever need these values...
     #but until then, to differentiate the method and the value, it stays camelcase
+    #might just keep them for clarity
 
     def penColor(self): # pylint: disable=invalid-name
         '''Returns the default current pen color.'''
@@ -335,7 +336,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         although the docs say that a standard resize() will be respected
         i could not get it to do that
         '''
-        #Canvas initialization
+        #region Canvas initialization
         self.drawing_area = ScribbleArea(self.scrollAreaWidgetContents)
         self.container_left.setWidgetResizable(True)
         left_layout = QtWidgets.QVBoxLayout()
@@ -349,16 +350,30 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.drawing_area.dataChanged.connect(self.update_table)
         self.drawing_area.posChanged.connect(self.update_coords)
+        #endregion
 
-        #Action signals and slots
+        #region Action signals and slots
         self.actionUndo.triggered.connect(self.undo)
         self.actionPen_Color.triggered.connect(self.change_pen_color)
         self.actionPen_Width.triggered.connect(self.change_pen_width)
         self.actionGitHub_Repository.triggered.connect(self.open_github)
         self.actionAbout.triggered.connect(self.about)
         self.actionOpen_image.triggered.connect(self.open)
+        #endregion
 
-        #Settings/preference stuff
+        #region Tab 1: Coordinate Table
+
+        #endregion
+
+        #region Tab 2: Conversion
+
+        #endregion
+
+        #region Tab 3: Export Data
+
+        #endregion
+
+        #region Tab 4: Settings
         self.set_color_button.clicked.connect(self.change_pen_color)
         self.set_width_button.clicked.connect(self.change_pen_width)
         self.reset_settings_button.clicked.connect(self.reset_prefs)
@@ -374,7 +389,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.use_crosshair_checkbox.toggled.connect(lambda: self.change_preference("use_crosshair", self.use_crosshair_checkbox.isChecked()))
         self.show_color_checkbox.toggled.connect(lambda: self.change_preference("show_color", self.show_color_checkbox.isChecked()))
 
-        #Default settings
+        self.set_canvas_size_button.clicked.connect(self.change_canvas_size)
+        #endregion
+
+        #region Default settings
         #Technically some of these don't need to be here and can instead be in drawing_area
         #but I found it easier to refer to these values here rather than doing it across classes
         self.settings = {
@@ -389,17 +407,15 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "default_color":[0, 0, 255, 255],
             "default_width":1
         }
+        #endregion
 
-        #Tab 1: 
-
-        #All other initialization
+        #region All other initialization
         self.load_from_prefs()
 
         #this needs to be thrown into a function later, especially if color is a thing
         if not self.settings['check_overlaps']:
             self.table_widget.setColumnCount(4)
-
-        #self.resize(500, 500)
+        #endregion
     def change_preference(self, preference, value):
         '''Change `preference` to `value` and perform additional actions as necessary.
         This includes updating preferences.json.\n
@@ -429,10 +445,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
 
         write_prefs(self.settings)
-
     def load_from_prefs(self):
         '''Update self.settings based on values read from preferences.json.
-        Remove if the __init__ call becomes the only call.'''
+        Remove if the __init__ call becomes the only call.
+        Also updates UI elements as needed to reflect these.'''
         self.settings = get_prefs()
 
         #to unpack a list and expand it for arguments, place an asterisk before the list
@@ -453,7 +469,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #or the first condition should just do nothing...
             pass
 
-        #update checkboxes and stuff...
+        #update checkboxes and stuff to match...
         self.active_redraw_checkbox.setChecked(self.settings['active_redraw'])
         self.active_table_checkbox.setChecked(self.settings['active_table'])
         self.active_overlaps_checkbox.setChecked(self.settings['active_overlaps'])
@@ -465,7 +481,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #and finally update the canvas and table(s) as required
         self.update_all()
-
     def reset_prefs(self):
         '''Set the user preference file (preferences.json) to the defaults.
         This is achieved by getting the contents of defaults.json and writing it to the user's preference file.
@@ -533,6 +548,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         should immediately reflect changes to the default pen color.'''
         self.drawing_area.draw_all_rects()
         self.update_table()
+    def change_canvas_size(self):
+        '''Change the size of the canvas to that specified in `canvas_width_edit` and
+        `canvas_height_edit`. This is influenced by the `crop_image` and `stretch_image` settings.'''
+        new_width = int(self.canvas_width_edit.text())
+        new_height = int(self.canvas_height_edit.text())
+        self.drawing_area.setFixedSize(new_width, new_height)
     def remove_last(self):
         '''Remove the most recently added row.'''
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
