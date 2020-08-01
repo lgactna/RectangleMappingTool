@@ -68,7 +68,8 @@ default_prefpath = appctxt.get_resource('default.json')
 
 '''todo (vaguely in this order):
         full settings implementation (logic)
-        disable "change color" button if disabled
+        clear field button
+        disable live overlap calculation in table if live table is disabled
         forced resize option (define custom canvas area, preload)
         resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
         resize logic post image load
@@ -78,6 +79,8 @@ default_prefpath = appctxt.get_resource('default.json')
         fstring export
         edit table values and update accordingly
         custom fields
+        disable "change color" button if disabled
+        warn that custom colors will be discarded if colors are enabled and then disabled
         update coordinate table upper-left labels on draw finish
         highlight row on draw finish
         click row (or row element) to show rectangle info
@@ -88,7 +91,7 @@ default_prefpath = appctxt.get_resource('default.json')
         docstring standards conformity
         other pylint stuff
         qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
-        unbreak the overlap system
+        unbreak the overlap system (which doesn't even work correctly in its current state)
         unbreak the draw system
 '''
 
@@ -125,6 +128,7 @@ class ScribbleArea(QtWidgets.QWidget):
     #they must be class variables/attributes declared here
     dataChanged = QtCore.pyqtSignal()
     posChanged = QtCore.pyqtSignal(int, int)
+    sizeChanged = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         super(ScribbleArea, self).__init__(parent)
 
@@ -137,7 +141,8 @@ class ScribbleArea(QtWidgets.QWidget):
         #if colors will be implemented, then the structure will need to be modified
         #perhaps each element can be an array of [QtCore.QRect, (r,g,b)]
         self.rects = []
-        self.loaded_image = None
+        self.loaded_image_path = None
+        self.loaded_image_size = None
 
         #A QtWidgets.QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed.
         #This sets it to always receive mouse events, regardless.
@@ -152,12 +157,10 @@ class ScribbleArea(QtWidgets.QWidget):
             "default_pen_color": QtGui.QColor(0, 0, 255, 255)
         }
     def open_image(self, file_name):
-        '''Open an external image and set it as the canvas background.
-        This should also calculate any necessary canvas/image size changes.'''
-        new_image = QtGui.QImage()
-        print(new_image.size())
-        
-        self.loaded_image = file_name
+        '''Sets the image at `file_name` to be the canvas background.
+        It will then resize the canvas as needed and redraw rectangles.'''        
+        self.loaded_image_path = file_name
+        self.calculate_sizes()
         self.draw_all_rects()
         '''
         loadedImage = QtGui.QImage()
@@ -172,6 +175,24 @@ class ScribbleArea(QtWidgets.QWidget):
         self.update()
         return True
         '''
+
+    def calculate_sizes(self):
+        '''Determine what size the image should be, and if needed, resize the canvas.'''
+        image = QtGui.QImage()
+        image.load(self.loaded_image_path)
+
+        image_size = image.size()
+        canvas_size = self.size()
+
+        if self.settings['crop_large_images'] and (image_size.width() > canvas_size.width() or image_size.height() > canvas_size.height()):
+            self.loaded_image_size = image_size
+        elif self.settings['stretch_small_images'] and (image_size.width() < canvas_size.width() or image_size.height() < canvas_size.height()):
+            self.loaded_image_size = canvas_size
+        else:
+            #if there aren't any special settings, just set the canvas to be the size of the loaded image
+            self.setFixedSize(image_size)
+            self.sizeChanged.emit()
+            self.loaded_image_size = image_size
 
     def save_image(self, file_name, file_format):
         '''Save the image as the specified file name in the specified format.'''
@@ -251,20 +272,13 @@ class ScribbleArea(QtWidgets.QWidget):
         painter.setPen(QtGui.QPen(self.settings['default_pen_color'], self.settings['default_pen_width'], QtCore.Qt.SolidLine,
                             QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
         #at this point we can redraw the image
-        bg_img = QtGui.QPixmap(self.loaded_image)
-        #print(bg_img.height())
-        # print(bg_img.width())
-        #bg_img_width = bg_img.width()
-        #bg_img_height = bg_img.height()
-        if self.loaded_image:
-            if bg_img.width() > self.frameGeometry().width(): #the image isn't drawing because you need to fix this
-                final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
-                print(final_height)
-                final_width = self.frameGeometry().width()
-                painter.drawPixmap(QtCore.QRect(0, 0, final_width, final_height), bg_img)
-            else:
-                painter.drawPixmap(QtCore.QRect(0, 0, bg_img.width(), bg_img.height()), bg_img)
-            #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
+        if self.loaded_image_path:
+            bg_img = QtGui.QPixmap(self.loaded_image_path)
+            #because of the way this is set up right now - to use a qrect of x size and place an image in it
+            #we don't directly change the size of the image
+            #so the instance attribute "loaded_image_size" is used instead
+            painter.drawPixmap(QtCore.QRect(0, 0, self.loaded_image_size.width(), self.loaded_image_size.height()), bg_img)
+        #drawing area has no border so use of frameGeometry should not be necessary?
         #painter.drawPixmap(QtCore.QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),bg_img)
         for rect in self.rects:
             painter.drawRect(rect)
@@ -350,6 +364,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.drawing_area.dataChanged.connect(self.update_table)
         self.drawing_area.posChanged.connect(self.update_coords)
+        self.drawing_area.sizeChanged.connect(self.update_size_labels)
         #endregion
 
         #region Action signals and slots
@@ -398,7 +413,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings = {
             "active_redraw":True,
             "active_table":False,
-            "active_overlaps":False,
+            "active_overlaps":False, #this setting is broken and needs to be fixed along with the overlap stuff
             "check_overlaps":True,
             "crop_image":False,
             "stretch_image":False,
@@ -443,6 +458,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
             else:
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
+        if preference == "active_table" or preference == "check_overlaps":
+            if self.settings['active_table'] and self.settings['check_overlaps']:
+                self.active_overlaps_checkbox.setEnabled(True)
+            else:
+                self.active_overlaps_checkbox.setEnabled(False)
+                self.active_overlaps_checkbox.setChecked(False)
+                self.settings['active_overlaps'] = False
+        if preference == "crop_image":
+            self.drawing_area.settings['crop_large_images'] = value
+        if preference == "stretch_image":
+            self.drawing_area.settings['stretch_small_images'] = value
 
         write_prefs(self.settings)
     def load_from_prefs(self):
@@ -550,10 +576,16 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.update_table()
     def change_canvas_size(self):
         '''Change the size of the canvas to that specified in `canvas_width_edit` and
-        `canvas_height_edit`. This is influenced by the `crop_image` and `stretch_image` settings.'''
+        `canvas_height_edit`. This is influenced by the `crop_image` and `stretch_image` settings.
+        Note that the image and canvas maniuplation are not actually done here - they are done
+        in ScribbleArea itself.'''
         new_width = int(self.canvas_width_edit.text())
         new_height = int(self.canvas_height_edit.text())
-        self.drawing_area.setFixedSize(new_width, new_height)
+        new_size = QtCore.QSize(new_width, new_height)
+        self.drawing_area.setFixedSize(new_size)
+    def update_size_labels(self):
+        self.canvas_width_edit.setText(str(self.drawing_area.size().width()))
+        self.canvas_height_edit.setText(str(self.drawing_area.size().height()))
     def remove_last(self):
         '''Remove the most recently added row.'''
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
