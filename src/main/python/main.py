@@ -63,6 +63,7 @@ from rectmap import Ui_MainWindow
 #------
 appctxt = ApplicationContext()
 prefpath = appctxt.get_resource('preferences.json')
+default_prefpath = appctxt.get_resource('default.json')
 #endregion imports
 
 '''todo (vaguely in this order):
@@ -91,13 +92,22 @@ prefpath = appctxt.get_resource('preferences.json')
         unbreak the draw system
 '''
 
-def get_prefs():
-    '''Get `data` from preferences.json.
+def get_prefs(source="user"):
+    '''Get `data` from either preferences.json or default.json.
+    `source` is a `str`, either `"user"` or `"default"`. The default is `"user"`.\n
+    Using `"user"` returns the local preferences from preferences.json.
+    Using `"default"` returns the default preferences from default.json.\n
     Returns a standard Python dict.'''
-    pref_file = open(prefpath)
-    data = json.load(pref_file)
-    pref_file.close()
-    return data
+    if source == "user":
+        pref_file = open(prefpath)
+        data = json.load(pref_file)
+        pref_file.close()
+        return data
+    elif source == "default":
+        pref_file = open(default_prefpath)
+        data = json.load(pref_file)
+        pref_file.close()
+        return data
 
 def write_prefs(data):
     '''Write `data` to preferences.json with 4-space indents.
@@ -325,6 +335,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         although the docs say that a standard resize() will be respected
         i could not get it to do that
         '''
+        #Canvas initialization
         self.drawing_area = ScribbleArea(self.scrollAreaWidgetContents)
         self.container_left.setWidgetResizable(True)
         left_layout = QtWidgets.QVBoxLayout()
@@ -333,12 +344,13 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scrollAreaWidgetContents.setLayout(left_layout)
         #we will need to set a signal later that resizes this widget based on a given background image
         #(or we just directly resize it after calling open())
-        self.drawing_area.setFixedSize(400, 300) 
+        self.drawing_area.setFixedSize(400, 300)
         self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor)) #make this responsive to a setting
 
-        self.drawing_area.dataChanged.connect(self.updatetable)
+        self.drawing_area.dataChanged.connect(self.update_table)
         self.drawing_area.posChanged.connect(self.update_coords)
 
+        #Action signals and slots
         self.actionUndo.triggered.connect(self.undo)
         self.actionPen_Color.triggered.connect(self.change_pen_color)
         self.actionPen_Width.triggered.connect(self.change_pen_width)
@@ -346,8 +358,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionAbout.triggered.connect(self.about)
         self.actionOpen_image.triggered.connect(self.open)
 
+        #Settings/preference stuff
         self.set_color_button.clicked.connect(self.change_pen_color)
         self.set_width_button.clicked.connect(self.change_pen_width)
+        self.reset_settings_button.clicked.connect(self.reset_prefs)
 
         #im not sure if there's a better way to do this lol
         #pylint is fuming but my screen is wide enough so ill change it later
@@ -360,7 +374,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.use_crosshair_checkbox.toggled.connect(lambda: self.change_preference("use_crosshair", self.use_crosshair_checkbox.isChecked()))
         self.show_color_checkbox.toggled.connect(lambda: self.change_preference("show_color", self.show_color_checkbox.isChecked()))
 
-        #Default settings.
+        #Default settings
         #Technically some of these don't need to be here and can instead be in drawing_area
         #but I found it easier to refer to these values here rather than doing it across classes
         self.settings = {
@@ -376,6 +390,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "default_width":1
         }
 
+        #Tab 1: 
+
+        #All other initialization
         self.load_from_prefs()
 
         #this needs to be thrown into a function later, especially if color is a thing
@@ -404,7 +421,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if preference == "active_redraw":
             self.drawing_area.settings['real_time_rects'] = value
         if preference == "active_table":
-            self.drawing_area.settings['real_time_rects'] = value
+            self.drawing_area.settings['real_time_table'] = value
         if preference == "use_crosshair":
             if value:
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
@@ -432,7 +449,30 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #maybe default column should be set to 3 in __init__?
             #or the first condition should just do nothing...
             pass
-    def updatetable(self):
+
+        #update checkboxes and stuff...
+        self.active_redraw_checkbox.setChecked(self.settings['active_redraw'])
+        self.active_table_checkbox.setChecked(self.settings['active_table'])
+        self.active_overlaps_checkbox.setChecked(self.settings['active_overlaps'])
+        self.check_overlaps_checkbox.setChecked(self.settings['check_overlaps'])
+        self.crop_image_checkbox.setChecked(self.settings['crop_image'])
+        self.stretch_image_checkbox.setChecked(self.settings['stretch_image'])
+        self.use_crosshair_checkbox.setChecked(self.settings['use_crosshair'])
+        self.show_color_checkbox.setChecked(self.settings['show_color'])
+
+        #and finally update the canvas and table(s) as required
+        self.update_all()
+
+    def reset_prefs(self):
+        '''Set the user preference file (preferences.json) to the defaults.
+        This is achieved by getting the contents of defaults.json and writing it to the user's preference file.
+        It will also call `load_from_prefs()` to deal with necessary post-processing.
+        Also calls `reset_prompt()` to warn the user of a potentially destructive action.'''
+        if self.reset_prompt():
+            default_prefs = get_prefs("default")
+            write_prefs(default_prefs)
+            self.load_from_prefs()
+    def update_table(self):
         '''Rebuild the entire table based on drawing_area.rects.'''
         #i hate this
         #but i want to finish other functionality before turning to efficiency changes so here we are
@@ -482,6 +522,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                             self.table_widget.setItem(rect2_index, 4,
                                                       QtWidgets.QTableWidgetItem(current+","+str(rect1_index+1)))
             #print("---")
+    def update_all(self):
+        '''Shorthand call to redraw all rectangles and reprocess the coordinate table.\n
+        Might need to be updated with the conversion table in the future.
+        Since the color field is planned to say "Default" when using to the default pen color\n
+        (as opposed to explicitly defining the rgba value), these "default-colored" rectangles
+        should immediately reflect changes to the default pen color.'''
+        self.drawing_area.draw_all_rects()
+        self.update_table()
     def remove_last(self):
         '''Remove the most recently added row.'''
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
@@ -508,7 +556,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
                     if response == QtWidgets.QMessageBox.Yes:
                         self.drawing_area.rects = []
-                        self.updatetable()
+                        self.update_table()
                 self.drawing_area.open_image(file_name)
                 #at this point, we should execute the resize logic
     def undo(self):
@@ -523,7 +571,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if new_color.isValid():
             self.drawing_area.set_pen_color(new_color)
             self.change_preference('default_color', list(new_color.getRgb()))
-            self.drawing_area.draw_all_rects() #reflect these changes
+            self.update_all()
     def change_pen_width(self):
         '''Open a dialog allowing the user to change the default rectangle width.'''
         new_width, response = QtWidgets.QInputDialog.getInt(self, "Set New Pen Width",
@@ -532,7 +580,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if response:
             self.drawing_area.set_pen_width(new_width)
             self.change_preference('default_width', new_width)
-            self.drawing_area.draw_all_rects()
+            self.update_all()
     def about(self):
         '''Opens this program's about dialog.'''
         QtWidgets.QMessageBox.about(self, "About RectangleMappingTool",
@@ -547,6 +595,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''Opens this program's repo in the user's default browser.'''
         webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
     #endregion
+    def reset_prompt(self):
+        '''Warns the user that they are about to reset the program's settings to their defaults.
+        Returns `True` if "Reset" is selected.
+        Returns `False` otherwise.'''
+        ret = QtWidgets.QMessageBox.warning(self, "Reset preferences?",
+                                          'Are you sure you want to reset your preferences to the default preferences?',
+                                          QtWidgets.QMessageBox.Reset | QtWidgets.QMessageBox.Cancel)
+        if ret == QtWidgets.QMessageBox.Reset:
+            return True
+        elif ret == QtWidgets.QMessageBox.Cancel:
+            return False
     def close_prompt(self):
         '''Warns the user if the canvas has been modified.
         This is determined by the presence of any rectangles.
@@ -558,7 +617,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #if this ends up being just a pre-close prompt, change the language accordingly
         if self.drawing_area.rects:
-            ret = QtWidgets.QMessageBox.information(self, "RectangleMappingTool",
+            ret = QtWidgets.QMessageBox.information(self, "Close?",
                                           'Ensure that you have exported or saved any data '
                                           'you were working with.\n'
                                           'Click "Close" to continue, or "Cancel" to return.',

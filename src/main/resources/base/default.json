@@ -1,0 +1,17 @@
+{
+    "active_redraw": true,
+    "active_table": false,
+    "active_overlaps": false,
+    "check_overlaps": true,
+    "crop_image": false,
+    "stretch_image": false,
+    "use_crosshair": true,
+    "show_color": false,
+    "default_color": [
+        0,
+        0,
+        255,
+        255
+    ],
+    "default_width": 1
+}
