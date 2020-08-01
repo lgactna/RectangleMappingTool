@@ -438,7 +438,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #to unpack a list and expand it for arguments, place an asterisk before the list
         #see https://stackoverflow.com/questions/3941517/converting-list-to-args-when-calling-function
         self.drawing_area.settings['default_pen_color'] = QtGui.QColor(*self.settings['default_color'])
+        self.drawing_area.settings['default_pen_width'] = self.settings['default_width']
 
+        #table logic
+        #make sure we don't destroy the user's custom fields if we do this
         if self.settings['check_overlaps'] and self.settings['show_color']:
             pass
         elif self.settings['check_overlaps']:

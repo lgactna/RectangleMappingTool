@@ -262,7 +262,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents_4 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_4.setGeometry(QtCore.QRect(0, -38, 429, 683))
+        self.scrollAreaWidgetContents_4.setGeometry(QtCore.QRect(0, -147, 429, 722))
         self.scrollAreaWidgetContents_4.setObjectName("scrollAreaWidgetContents_4")
         self.formLayout_2 = QtWidgets.QFormLayout(self.scrollAreaWidgetContents_4)
         self.formLayout_2.setObjectName("formLayout_2")
@@ -391,6 +391,10 @@ class Ui_MainWindow(object):
         self.label_24.setWordWrap(True)
         self.label_24.setObjectName("label_24")
         self.formLayout_2.setWidget(15, QtWidgets.QFormLayout.SpanningRole, self.label_24)
+        self.label_25 = QtWidgets.QLabel(self.scrollAreaWidgetContents_4)
+        self.label_25.setWordWrap(True)
+        self.label_25.setObjectName("label_25")
+        self.formLayout_2.setWidget(22, QtWidgets.QFormLayout.SpanningRole, self.label_25)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents_4)
         self.verticalLayout_6.addWidget(self.scrollArea)
         self.tabWidget.addTab(self.tab_3, "")
@@ -461,7 +465,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionUndo_toolbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -550,6 +554,7 @@ class Ui_MainWindow(object):
         self.label_20.setText(_translate("MainWindow", "Crop image to fit canvas."))
         self.reset_settings_button.setText(_translate("MainWindow", "Reset all settings to default"))
         self.label_24.setText(_translate("MainWindow", "(The settings below are not retroactive if changed. You will need to reload the image and/or resize the canvas again."))
+        self.label_25.setText(_translate("MainWindow", "Reset all settings to their default values. Note that this will affect any already-drawn rectangles."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Settings"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
