@@ -8,7 +8,7 @@
 ## Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ## All rights reserved.
 ##
-## This file is part of the examples of PyQt.
+## This file is part of the examples of Qt.
 ##
 ## $QT_BEGIN_LICENSE:BSD$
 ## You may use this file under the terms of the BSD license as follows:
@@ -54,15 +54,9 @@
 import sys
 import webbrowser
 import json
-import PyQt5
-from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 #QImageWriter is currently unused but it's used for saving images
 #specifically, determining savable formats
-from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor, QColor
-from PyQt5.QtWidgets import (QColorDialog, QFileDialog,
-                             QInputDialog, QMainWindow, QMessageBox, QWidget,
-                             QTableWidgetItem, QVBoxLayout)
-from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
+from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 #------
 from rectmap import Ui_MainWindow
@@ -112,30 +106,30 @@ def write_prefs(data):
     pref_file.write(json.dumps(data, indent=4))
     pref_file.close()
 
-class ScribbleArea(QWidget):
+class ScribbleArea(QtWidgets.QWidget):
     '''The primary canvas on which the user draws rectangles.
     
     Note that ScribbleArea is referred to as "the canvas" across (most) docstrings and comments.
     This class may change to "CanvasArea" in the future to match.'''
     #these are custom signals that will not work if placed in __init__
     #they must be class variables/attributes declared here
-    dataChanged = pyqtSignal()
-    posChanged = pyqtSignal(int, int)
+    dataChanged = QtCore.pyqtSignal()
+    posChanged = QtCore.pyqtSignal(int, int)
     def __init__(self, parent=None):
         super(ScribbleArea, self).__init__(parent)
 
         #instance attributes...
-        #self.setAttribute(Qt.WA_StaticContents)
+        #self.setAttribute(QtCore.Qt.WA_StaticContents)
         self.scribbling = False
-        self.image = QImage()
-        self.starting_point = QPoint()
-        self.end_point = QPoint()
+        self.image = QtGui.QImage()
+        self.starting_point = QtCore.QPoint()
+        self.end_point = QtCore.QPoint()
         #if colors will be implemented, then the structure will need to be modified
-        #perhaps each element can be an array of [QRect, (r,g,b)]
+        #perhaps each element can be an array of [QtCore.QRect, (r,g,b)]
         self.rects = []
         self.loaded_image = None
 
-        #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed.
+        #A QtWidgets.QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed.
         #This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
 
@@ -145,18 +139,18 @@ class ScribbleArea(QWidget):
             "crop_large_images": False,
             "stretch_small_images": False,
             "default_pen_width": 1,
-            "default_pen_color": QColor(0, 0, 255, 255)
+            "default_pen_color": QtGui.QColor(0, 0, 255, 255)
         }
     def open_image(self, file_name):
         '''Open an external image and set it as the canvas background.
         This should also calculate any necessary canvas/image size changes.'''
-        new_image = QImage()
+        new_image = QtGui.QImage()
         print(new_image.size())
         
         self.loaded_image = file_name
         self.draw_all_rects()
         '''
-        loadedImage = QImage()
+        loadedImage = QtGui.QImage()
         if not loadedImage.load(file_name):
             return False
 
@@ -182,7 +176,7 @@ class ScribbleArea(QWidget):
     def clear_image(self):
         '''Clear the canvas.
         In the future, this might be changed such that the opened image is drawn here.'''
-        self.image.fill(qRgb(255, 255, 255))
+        self.image.fill(QtGui.qRgb(255, 255, 255))
         self.update()
 
     def undo_last(self):
@@ -193,31 +187,31 @@ class ScribbleArea(QWidget):
         #we also need to update the table here
 
     def mousePressEvent(self, event): # pylint: disable=invalid-name
-        if event.button() == Qt.LeftButton:
+        if event.button() == QtCore.Qt.LeftButton:
             self.starting_point = event.pos()
             self.scribbling = True
 
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
         self.posChanged.emit(event.pos().x(), event.pos().y())
-        if (event.buttons() & Qt.LeftButton) and self.scribbling:
+        if (event.buttons() & QtCore.Qt.LeftButton) and self.scribbling:
             if self.settings['real_time_rects']:
-                self.rects.append(QRect(self.starting_point, event.pos()))
+                self.rects.append(QtCore.QRect(self.starting_point, event.pos()))
                 self.draw_all_rects()
                 if self.settings['real_time_table']:
                     self.dataChanged.emit() #this is used for "real-time" table updates
                 del self.rects[-1]
 
     def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
-        if event.button() == Qt.LeftButton and self.scribbling:
+        if event.button() == QtCore.Qt.LeftButton and self.scribbling:
             self.end_point = event.pos()
             self.scribbling = False
-            self.rects.append(QRect(self.starting_point, self.end_point))
+            self.rects.append(QtCore.QRect(self.starting_point, self.end_point))
             #here we should also add this data to the table and update it
             self.dataChanged.emit() #this says that the rectangle data has changed
             self.draw_all_rects()
 
     def paintEvent(self, event): # pylint: disable=invalid-name
-        painter = QPainter(self)
+        painter = QtGui.QPainter(self)
         dirty_rect = event.rect()
         painter.drawImage(dirty_rect, self.image, dirty_rect)
 
@@ -225,7 +219,7 @@ class ScribbleArea(QWidget):
         if self.width() > self.image.width() or self.height() > self.image.height():
             new_width = max(self.width() + 128, self.image.width())
             new_height = max(self.height() + 128, self.image.height())
-            self.resize_image(self.image, QSize(new_width, new_height))
+            self.resize_image(self.image, QtCore.QSize(new_width, new_height))
             self.update()
 
         super(ScribbleArea, self).resizeEvent(event)
@@ -237,17 +231,17 @@ class ScribbleArea(QWidget):
         is very inefficient because we don't just update the thing - no, we redraw *everything*
         a better way of doing this (i believe) is to use QGraphicsView since we don't need to store (and redraw) elements - it's done for us
 
-        that said, i wasn't able to implement a proper rectangle deletion function properly without using this "array -> draw everything method" w/ QPainter
+        that said, i wasn't able to implement a proper rectangle deletion function properly without using this "array -> draw everything method" w/ QtGui.QPainter
         it's also a good deal easier to mesh with the table widget and export it into a format i understand
 
         so maybe one day i'll refactor this but for now this is good enough without absolutely shredding through resources
         '''
         self.clear_image()
-        painter = QPainter(self.image)
-        painter.setPen(QPen(self.settings['default_pen_color'], self.settings['default_pen_width'], Qt.SolidLine,
-                            Qt.RoundCap, Qt.RoundJoin))
+        painter = QtGui.QPainter(self.image)
+        painter.setPen(QtGui.QPen(self.settings['default_pen_color'], self.settings['default_pen_width'], QtCore.Qt.SolidLine,
+                            QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
         #at this point we can redraw the image
-        bg_img = QPixmap(self.loaded_image)
+        bg_img = QtGui.QPixmap(self.loaded_image)
         #print(bg_img.height())
         # print(bg_img.width())
         #bg_img_width = bg_img.width()
@@ -257,11 +251,11 @@ class ScribbleArea(QWidget):
                 final_height = (bg_img.height()*self.frameGeometry().width())/bg_img.width()
                 print(final_height)
                 final_width = self.frameGeometry().width()
-                painter.drawPixmap(QRect(0, 0, final_width, final_height), bg_img)
+                painter.drawPixmap(QtCore.QRect(0, 0, final_width, final_height), bg_img)
             else:
-                painter.drawPixmap(QRect(0, 0, bg_img.width(), bg_img.height()), bg_img)
+                painter.drawPixmap(QtCore.QRect(0, 0, bg_img.width(), bg_img.height()), bg_img)
             #add two override fields on the conversion tab to say "if your bottom-right handle is not located at the bottom-right of the image" on tooltip
-        #painter.drawPixmap(QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),bg_img)
+        #painter.drawPixmap(QtCore.QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),bg_img)
         for rect in self.rects:
             painter.drawRect(rect)
         self.update()
@@ -270,22 +264,22 @@ class ScribbleArea(QWidget):
         if image.size() == new_size:
             return
 
-        new_image = QImage(new_size, QImage.Format_RGB32)
-        new_image.fill(qRgb(255, 255, 255))
-        painter = QPainter(new_image)
-        painter.drawImage(QPoint(0, 0), image)
+        new_image = QtGui.QImage(new_size, QtGui.QImage.Format_RGB32)
+        new_image.fill(QtGui.qRgb(255, 255, 255))
+        painter = QtGui.QPainter(new_image)
+        painter.drawImage(QtCore.QPoint(0, 0), image)
         self.image = new_image
 
     def print_(self):
-        '''Handles canvas printing via QPrintDialog.'''
-        printer = QPrinter(QPrinter.HighResolution)
+        '''Handles canvas printing via QtPrintSupport.QPrintDialog.'''
+        printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
 
-        print_dialog = QPrintDialog(printer, self)
-        if print_dialog.exec_() == QPrintDialog.Accepted:
-            painter = QPainter(printer)
+        print_dialog = QtPrintSupport.QPrintDialog(printer, self)
+        if print_dialog.exec_() == QtPrintSupport.QPrintDialog.Accepted:
+            painter = QtGui.QPainter(printer)
             rect = painter.viewport()
             size = self.image.size()
-            size.scale(rect.size(), Qt.KeepAspectRatio)
+            size.scale(rect.size(), QtCore.Qt.KeepAspectRatio)
             painter.setViewport(rect.x(), rect.y(), size.width(), size.height())
             painter.setWindow(self.image.rect())
             painter.drawImage(0, 0, self.image)
@@ -311,14 +305,14 @@ class ScribbleArea(QWidget):
         '''Set a new default pen width for the canvas.'''
         self.settings['default_pen_width'] = new_width
 
-class ApplicationWindow(QMainWindow, Ui_MainWindow):
+class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     '''The main window. Instantiated once.'''
     def __init__(self):
-        PyQt5.QtWidgets.QMainWindow.__init__(self)
+        QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
         self.setWindowTitle("RectangleMappingTool")
         '''
-        See https://stackoverflow.com/questions/35185113/configure-qwidget-to-fill-parent-via-layouts.
+        See https://stackoverflow.com/questions/35185113/configure-qtwidgets.qwidget-to-fill-parent-via-layouts.
         this appears to be the same issue in which this new widget is initialized to a 100px by 25px area
         so we create a new grid layout and place drawing_area into it
         this also affords us some flexibility if we ever want to hide drawing_area and place something different in container_left
@@ -333,14 +327,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         '''
         self.drawing_area = ScribbleArea(self.scrollAreaWidgetContents)
         self.container_left.setWidgetResizable(True)
-        left_layout = QVBoxLayout()
+        left_layout = QtWidgets.QVBoxLayout()
         left_layout.addWidget(self.drawing_area)
-        left_layout.setAlignment(Qt.AlignHCenter)
+        left_layout.setAlignment(QtCore.Qt.AlignHCenter)
         self.scrollAreaWidgetContents.setLayout(left_layout)
         #we will need to set a signal later that resizes this widget based on a given background image
         #(or we just directly resize it after calling open())
         self.drawing_area.setFixedSize(400, 300) 
-        self.drawing_area.setCursor(QCursor(Qt.CrossCursor)) #make this responsive to a setting
+        self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor)) #make this responsive to a setting
 
         self.drawing_area.dataChanged.connect(self.updatetable)
         self.drawing_area.posChanged.connect(self.update_coords)
@@ -356,6 +350,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.set_width_button.clicked.connect(self.change_pen_width)
 
         #im not sure if there's a better way to do this lol
+        #pylint is fuming but my screen is wide enough so ill change it later
         self.active_redraw_checkbox.toggled.connect(lambda: self.change_preference("active_redraw", self.active_redraw_checkbox.isChecked()))
         self.active_table_checkbox.toggled.connect(lambda: self.change_preference("active_table", self.active_table_checkbox.isChecked()))
         self.active_overlaps_checkbox.toggled.connect(lambda: self.change_preference("active_overlaps", self.active_overlaps_checkbox.isChecked()))
@@ -412,9 +407,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.drawing_area.settings['real_time_rects'] = value
         if preference == "use_crosshair":
             if value:
-                self.drawing_area.setCursor(QCursor(Qt.CrossCursor))
+                self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
             else:
-                self.drawing_area.setCursor(QCursor(Qt.ArrowCursor))
+                self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
 
         write_prefs(self.settings)
 
@@ -425,7 +420,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         #to unpack a list and expand it for arguments, place an asterisk before the list
         #see https://stackoverflow.com/questions/3941517/converting-list-to-args-when-calling-function
-        self.drawing_area.settings['default_pen_color'] = QColor(*self.settings['default_color'])
+        self.drawing_area.settings['default_pen_color'] = QtGui.QColor(*self.settings['default_color'])
 
         if self.settings['check_overlaps'] and self.settings['show_color']:
             pass
@@ -449,14 +444,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             coords = self.drawing_area.rects[row_number].getCoords()
             #print("adding row %s" % str(int(row_number)+1))
             self.table_widget.setRowCount(row_number+1)
-            self.table_widget.setItem(row_number, 0, QTableWidgetItem(str(coords[0])))
-            self.table_widget.setItem(row_number, 1, QTableWidgetItem(str(coords[1])))
-            self.table_widget.setItem(row_number, 2, QTableWidgetItem(str(coords[2])))
-            self.table_widget.setItem(row_number, 3, QTableWidgetItem(str(coords[3]))) #row, column, QTableWidgetItem; zero-indexed
-            self.table_widget.setItem(row_number, 4, QTableWidgetItem(""))
-            self.table_widget.setItem(row_number, 5, QTableWidgetItem(""))#we can add the color property later
+            self.table_widget.setItem(row_number, 0, QtWidgets.QTableWidgetItem(str(coords[0])))
+            self.table_widget.setItem(row_number, 1, QtWidgets.QTableWidgetItem(str(coords[1])))
+            self.table_widget.setItem(row_number, 2, QtWidgets.QTableWidgetItem(str(coords[2])))
+            self.table_widget.setItem(row_number, 3, QtWidgets.QTableWidgetItem(str(coords[3]))) #row, column, QtWidgets.QTableWidgetItem; zero-indexed
+            self.table_widget.setItem(row_number, 4, QtWidgets.QTableWidgetItem(""))
+            self.table_widget.setItem(row_number, 5, QtWidgets.QTableWidgetItem(""))#we can add the color property later
 
-        #we can perform brute-force checking with QRect.intersects(<QRect2>)
+        #we can perform brute-force checking with QtCore.QRect.intersects(<QtCore.QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
         #add an "overlaps with" column if this is enabled
         if self.settings['check_overlaps']:
@@ -465,7 +460,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             #while implementing an array for each cell would be much better for various calculations and operations
             #maybe later
             for row_number in range(0, len(rectangles)):
-                self.table_widget.setItem(row_number, 4, QTableWidgetItem(""))
+                self.table_widget.setItem(row_number, 4, QtWidgets.QTableWidgetItem(""))
             for rect1_index in range(0, len(rectangles)):
                 for rect2_index in range(rect1_index+1, len(rectangles)):
                     intersects = rectangles[rect1_index].intersects(rectangles[rect2_index])
@@ -476,16 +471,16 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                     if intersects:
                         if current == "":
                             self.table_widget.setItem(rect1_index, 4,
-                                                      QTableWidgetItem(str(rect2_index+1)))
+                                                      QtWidgets.QTableWidgetItem(str(rect2_index+1)))
                         else:
                             self.table_widget.setItem(rect1_index, 4,
-                                                      QTableWidgetItem(current+","+str(rect2_index+1)))
+                                                      QtWidgets.QTableWidgetItem(current+","+str(rect2_index+1)))
                         if current2 == "":
                             self.table_widget.setItem(rect2_index, 4,
-                                                      QTableWidgetItem(str(rect1_index+1)))
+                                                      QtWidgets.QTableWidgetItem(str(rect1_index+1)))
                         else:
                             self.table_widget.setItem(rect2_index, 4,
-                                                      QTableWidgetItem(current+","+str(rect1_index+1)))
+                                                      QtWidgets.QTableWidgetItem(current+","+str(rect1_index+1)))
             #print("---")
     def remove_last(self):
         '''Remove the most recently added row.'''
@@ -496,22 +491,22 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     #region Actions
     def open(self):
         '''Handles opening an image.
-        This includes the creation of a QFileDialog and determining if an image is valid.
+        This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
         It will also ask the user if they want to clear the canvas on image load.'''
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open File",
-                                                   QDir.currentPath())
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File",
+                                                   QtCore.QDir.currentPath())
         if file_name:
-            if not QImage().load(file_name):
-                QMessageBox.critical(self, "Couldn't load image",
+            if not QtGui.QImage().load(file_name):
+                QtWidgets.QMessageBox.critical(self, "Couldn't load image",
                                      "This image appears to be an unsupported filetype and could not be loaded.",
-                                     QMessageBox.Ok)
+                                     QtWidgets.QMessageBox.Ok)
                 self.open()
             else:
                 if self.drawing_area.rects:
-                    response = QMessageBox.question(self, "Reset drawing area?",
+                    response = QtWidgets.QMessageBox.question(self, "Reset drawing area?",
                                                     'Do you want to clear drawn rectangles and start from scratch?',
-                                                    QMessageBox.Yes | QMessageBox.No)
-                    if response == QMessageBox.Yes:
+                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                    if response == QtWidgets.QMessageBox.Yes:
                         self.drawing_area.rects = []
                         self.updatetable()
                 self.drawing_area.open_image(file_name)
@@ -524,14 +519,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
     def change_pen_color(self):
         '''Open a dialog allowing the user to change the default rectangle color.'''
-        new_color = QColorDialog.getColor(self.drawing_area.penColor())
+        new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         if new_color.isValid():
             self.drawing_area.set_pen_color(new_color)
             self.change_preference('default_color', list(new_color.getRgb()))
             self.drawing_area.draw_all_rects() #reflect these changes
     def change_pen_width(self):
         '''Open a dialog allowing the user to change the default rectangle width.'''
-        new_width, response = QInputDialog.getInt(self, "Set New Pen Width",
+        new_width, response = QtWidgets.QInputDialog.getInt(self, "Set New Pen Width",
                                                   "Select pen width:",
                                                   self.drawing_area.penWidth(), 1, 50, 1)
         if response:
@@ -540,7 +535,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.drawing_area.draw_all_rects()
     def about(self):
         '''Opens this program's about dialog.'''
-        QMessageBox.about(self, "About RectangleMappingTool",
+        QtWidgets.QMessageBox.about(self, "About RectangleMappingTool",
                 '<p>RectangleMappingTool is a program designed for the '
                 '<a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, '
                 'built with PyQt5 and packaged through fbs.</p>'
@@ -563,14 +558,14 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
 
         #if this ends up being just a pre-close prompt, change the language accordingly
         if self.drawing_area.rects:
-            ret = QMessageBox.information(self, "RectangleMappingTool",
+            ret = QtWidgets.QMessageBox.information(self, "RectangleMappingTool",
                                           'Ensure that you have exported or saved any data '
                                           'you were working with.\n'
                                           'Click "Close" to continue, or "Cancel" to return.',
-                                          QMessageBox.Close | QMessageBox.Cancel)
-            if ret == QMessageBox.Close:
+                                          QtWidgets.QMessageBox.Close | QtWidgets.QMessageBox.Cancel)
+            if ret == QtWidgets.QMessageBox.Close:
                 return True
-            elif ret == QMessageBox.Cancel:
+            elif ret == QtWidgets.QMessageBox.Cancel:
                 return False
         else:
             return True
@@ -583,9 +578,9 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             event.ignore()
 '''
     def saveFile(self, file_format):
-        initialPath = QDir.currentPath() + '/untitled.' + file_format
+        initialPath = QtCore.QDir.currentPath() + '/untitled.' + file_format
 
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save As", initialPath,
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
                 "%s Files (*.%s);;All Files (*)" % (file_format.upper(), file_format))
         if file_name:
             return self.scribbleArea.save_image(file_name, file_format)
