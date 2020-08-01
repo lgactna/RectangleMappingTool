@@ -149,12 +149,13 @@ class ScribbleArea(QtWidgets.QWidget):
         self.setMouseTracking(True)
 
         self.settings = {
-            "real_time_rects": True,
-            "real_time_table": False,
-            "crop_large_images": False,
-            "stretch_small_images": False,
-            "default_pen_width": 1,
-            "default_pen_color": QtGui.QColor(0, 0, 255, 255)
+            "active_redraw": True,
+            "active_table": False,
+            "crop_image": False, #crop large images
+            "stretch_image": False, #stretch small images
+            "keep_ratio": True, #preserve aspect ratio on stretch
+            "default_width": 1,
+            "default_color": QtGui.QColor(0, 0, 255, 255)
         }
     def open_image(self, file_name):
         '''Sets the image at `file_name` to be the canvas background.
@@ -184,10 +185,15 @@ class ScribbleArea(QtWidgets.QWidget):
         image_size = image.size()
         canvas_size = self.size()
 
-        if self.settings['crop_large_images'] and (image_size.width() > canvas_size.width() or image_size.height() > canvas_size.height()):
+        if self.settings['crop_image'] and (image_size.width() > canvas_size.width() or image_size.height() > canvas_size.height()):
             self.loaded_image_size = image_size
-        elif self.settings['stretch_small_images'] and (image_size.width() < canvas_size.width() or image_size.height() < canvas_size.height()):
-            self.loaded_image_size = canvas_size
+        elif self.settings['stretch_image'] and (image_size.width() < canvas_size.width() or image_size.height() < canvas_size.height()):
+            if self.settings['keep_ratio']:
+                #scale the size to the largest aspect ratio-preserving size within canvas_size.width() and canvas_size.height()
+                image_size.scale(canvas_size.width(),canvas_size.height(),QtCore.Qt.KeepAspectRatio)
+                self.loaded_image_size = image_size
+            else:
+                self.loaded_image_size = canvas_size
         else:
             #if there aren't any special settings, just set the canvas to be the size of the loaded image
             self.setFixedSize(image_size)
@@ -269,7 +275,7 @@ class ScribbleArea(QtWidgets.QWidget):
         '''
         self.clear_image()
         painter = QtGui.QPainter(self.image)
-        painter.setPen(QtGui.QPen(self.settings['default_pen_color'], self.settings['default_pen_width'], QtCore.Qt.SolidLine,
+        painter.setPen(QtGui.QPen(self.settings['default_color'], self.settings['default_width'], QtCore.Qt.SolidLine,
                             QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
         #at this point we can redraw the image
         if self.loaded_image_path:
@@ -309,26 +315,26 @@ class ScribbleArea(QtWidgets.QWidget):
             painter.drawImage(0, 0, self.image)
             painter.end()
 
-    #will probably just remove these later since we can just get drawing_area.settings['default_pen_color'] and so on if we ever need these values...
+    #will probably just remove these later since we can just get drawing_area.settings['default_color'] and so on if we ever need these values...
     #but until then, to differentiate the method and the value, it stays camelcase
     #might just keep them for clarity
 
     def penColor(self): # pylint: disable=invalid-name
         '''Returns the default current pen color.'''
-        return self.settings['default_pen_color']
+        return self.settings['default_color']
 
     def penWidth(self):  # pylint: disable=invalid-name
         '''Returns the current default pen width.'''
-        return self.settings['default_pen_width']
+        return self.settings['default_width']
 
     #probably same with these
     def set_pen_color(self, new_color):
         '''Set a new default pen color for the canvas.'''
-        self.settings['default_pen_color'] = new_color
+        self.settings['default_color'] = new_color
 
     def set_pen_width(self, new_width):
         '''Set a new default pen width for the canvas.'''
-        self.settings['default_pen_width'] = new_width
+        self.settings['default_width'] = new_width
 
 class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     '''The main window. Instantiated once.'''
@@ -403,6 +409,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.stretch_image_checkbox.toggled.connect(lambda: self.change_preference("stretch_image", self.stretch_image_checkbox.isChecked()))
         self.use_crosshair_checkbox.toggled.connect(lambda: self.change_preference("use_crosshair", self.use_crosshair_checkbox.isChecked()))
         self.show_color_checkbox.toggled.connect(lambda: self.change_preference("show_color", self.show_color_checkbox.isChecked()))
+        self.keep_ratio_checkbox.toggled.connect(lambda: self.change_preference("keep_ratio", self.keep_ratio_checkbox.isChecked()))
 
         self.set_canvas_size_button.clicked.connect(self.change_canvas_size)
         #endregion
@@ -417,6 +424,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "check_overlaps":True,
             "crop_image":False,
             "stretch_image":False,
+            "keep_ratio":True,
             "use_crosshair":True,
             "show_color":False,
             "default_color":[0, 0, 255, 255],
@@ -441,6 +449,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         `check_overlaps`: Calculate overlapping rectangles after a rectangle has been drawn.\n
         `crop_image`: Crop loaded images to fit canvas (instead of upsizing the canvas to fit).\n
         `stretch_image`: Stretch the image to fit canvas (instead of downsizing the canvas).\n
+        `keep_ratio`: If `stretch_image` is enabled, preserve aspect ratio on stretch.\n
         `use_crosshair`: Use a crosshair cursor instead of the standard pointer cursor.\n
         `show_color`: Enable per-rectangle colors and add a "color" column to the table.\n
         `default_color (list)`: The default color used for drawing rectangles, represented by an rgba array.\n
@@ -466,9 +475,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.active_overlaps_checkbox.setChecked(False)
                 self.settings['active_overlaps'] = False
         if preference == "crop_image":
-            self.drawing_area.settings['crop_large_images'] = value
+            self.drawing_area.settings['crop_image'] = value
         if preference == "stretch_image":
-            self.drawing_area.settings['stretch_small_images'] = value
+            self.drawing_area.settings['stretch_image'] = value
+            if value:
+                self.keep_ratio_checkbox.setEnabled(True)
+            else:
+                self.keep_ratio_checkbox.setEnabled(False)
+
 
         write_prefs(self.settings)
     def load_from_prefs(self):
@@ -477,10 +491,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Also updates UI elements as needed to reflect these.'''
         self.settings = get_prefs()
 
+        for i in self.drawing_area.settings:
+            self.drawing_area.settings[i] = self.settings[i]
+        #we need to override the default_color value to be a QColor object, not an array
         #to unpack a list and expand it for arguments, place an asterisk before the list
         #see https://stackoverflow.com/questions/3941517/converting-list-to-args-when-calling-function
-        self.drawing_area.settings['default_pen_color'] = QtGui.QColor(*self.settings['default_color'])
-        self.drawing_area.settings['default_pen_width'] = self.settings['default_width']
+        self.drawing_area.settings['default_color'] = QtGui.QColor(*self.settings['default_color'])
 
         #table logic
         #make sure we don't destroy the user's custom fields if we do this
@@ -502,8 +518,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.check_overlaps_checkbox.setChecked(self.settings['check_overlaps'])
         self.crop_image_checkbox.setChecked(self.settings['crop_image'])
         self.stretch_image_checkbox.setChecked(self.settings['stretch_image'])
+        self.keep_ratio_checkbox.setChecked(self.settings['keep_ratio'])
         self.use_crosshair_checkbox.setChecked(self.settings['use_crosshair'])
         self.show_color_checkbox.setChecked(self.settings['show_color'])
+
+        #also enabled/disabled logic
+        if self.settings['active_table'] and self.settings['check_overlaps']:
+            self.active_overlaps_checkbox.setEnabled(True)
+        else:
+            self.active_overlaps_checkbox.setEnabled(False)
+        if self.settings['stretch_image']:
+            self.keep_ratio_checkbox.setEnabled(True)
 
         #and finally update the canvas and table(s) as required
         self.update_all()
