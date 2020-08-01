@@ -48,12 +48,9 @@
 #endregion licensing
 
 #region imports
-#i *would* convert these to asterisks but then pylint makes my document look like a bloodbath
-#well the document is a bloodbath as is but i'll fix the camelcase vs snakecase later
-#and everything else...
 
 #https://stackoverflow.com/questions/3615125/should-wildcard-import-be-avoided
-#perhaps this should be changed later
+#will change to qualified imports later
 import sys
 import webbrowser
 import json
@@ -61,7 +58,7 @@ import PyQt5
 from PyQt5.QtCore import QDir, QPoint, QRect, QSize, Qt, pyqtSignal
 #QImageWriter is currently unused but it's used for saving images
 #specifically, determining savable formats
-from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor
+from PyQt5.QtGui import QImage, QImageWriter, QPainter, QPen, qRgb, QPixmap, QCursor, QColor
 from PyQt5.QtWidgets import (QColorDialog, QFileDialog,
                              QInputDialog, QMainWindow, QMessageBox, QWidget,
                              QTableWidgetItem, QVBoxLayout)
@@ -93,6 +90,9 @@ prefpath = appctxt.get_resource('preferences.json')
         right-click custom context menu
         toolbar (if needed)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
+        docstring standards conformity
+        other pylint stuff
+        qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
         unbreak the overlap system
         unbreak the draw system
 '''
@@ -127,8 +127,6 @@ class ScribbleArea(QWidget):
         #instance attributes...
         #self.setAttribute(Qt.WA_StaticContents)
         self.scribbling = False
-        self.default_pen_width = 1
-        self.default_pen_color = Qt.blue
         self.image = QImage()
         self.starting_point = QPoint()
         self.end_point = QPoint()
@@ -140,14 +138,14 @@ class ScribbleArea(QWidget):
         #A QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed.
         #This sets it to always receive mouse events, regardless.
         self.setMouseTracking(True)
-        self.real_time_rects = True
-        self.real_time_table = False
 
-        self.settings ={
+        self.settings = {
             "real_time_rects": True,
             "real_time_table": False,
             "crop_large_images": False,
-            "stretch_small_images": False
+            "stretch_small_images": False,
+            "default_pen_width": 1,
+            "default_pen_color": QColor(0, 0, 255, 255)
         }
     def open_image(self, file_name):
         '''Open an external image and set it as the canvas background.
@@ -202,10 +200,10 @@ class ScribbleArea(QWidget):
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
         self.posChanged.emit(event.pos().x(), event.pos().y())
         if (event.buttons() & Qt.LeftButton) and self.scribbling:
-            if self.real_time_rects:
+            if self.settings['real_time_rects']:
                 self.rects.append(QRect(self.starting_point, event.pos()))
                 self.draw_all_rects()
-                if self.real_time_table:
+                if self.settings['real_time_table']:
                     self.dataChanged.emit() #this is used for "real-time" table updates
                 del self.rects[-1]
 
@@ -246,7 +244,7 @@ class ScribbleArea(QWidget):
         '''
         self.clear_image()
         painter = QPainter(self.image)
-        painter.setPen(QPen(self.default_pen_color, self.default_pen_width, Qt.SolidLine,
+        painter.setPen(QPen(self.settings['default_pen_color'], self.settings['default_pen_width'], Qt.SolidLine,
                             Qt.RoundCap, Qt.RoundJoin))
         #at this point we can redraw the image
         bg_img = QPixmap(self.loaded_image)
@@ -293,25 +291,25 @@ class ScribbleArea(QWidget):
             painter.drawImage(0, 0, self.image)
             painter.end()
 
-    #will probably just remove these later since we can just get drawing_area.default_pen_color and so on if we ever need these values...
+    #will probably just remove these later since we can just get drawing_area.settings['default_pen_color'] and so on if we ever need these values...
     #but until then, to differentiate the method and the value, it stays camelcase
 
     def penColor(self): # pylint: disable=invalid-name
         '''Returns the default current pen color.'''
-        return self.default_pen_color
+        return self.settings['default_pen_color']
 
     def penWidth(self):  # pylint: disable=invalid-name
         '''Returns the current default pen width.'''
-        return self.default_pen_width
+        return self.settings['default_pen_width']
 
     #probably same with these
     def set_pen_color(self, new_color):
         '''Set a new default pen color for the canvas.'''
-        self.default_pen_color = new_color
+        self.settings['default_pen_color'] = new_color
 
     def set_pen_width(self, new_width):
         '''Set a new default pen width for the canvas.'''
-        self.default_pen_width = new_width
+        self.settings['default_pen_width'] = new_width
 
 class ApplicationWindow(QMainWindow, Ui_MainWindow):
     '''The main window. Instantiated once.'''
@@ -358,16 +356,18 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         self.set_width_button.clicked.connect(self.change_pen_width)
 
         #im not sure if there's a better way to do this lol
-        self.active_redraw_checkbox.toggled.connect(lambda: self.change_prefs("active_redraw", self.active_redraw_checkbox.isChecked()))
-        self.active_table_checkbox.toggled.connect(lambda: self.change_prefs("active_table", self.active_table_checkbox.isChecked()))
-        self.active_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("active_overlaps", self.active_overlaps_checkbox.isChecked()))
-        self.check_overlaps_checkbox.toggled.connect(lambda: self.change_prefs("check_overlaps", self.check_overlaps_checkbox.isChecked()))
-        self.crop_image_checkbox.toggled.connect(lambda: self.change_prefs("crop_image", self.crop_image_checkbox.isChecked()))
-        self.stretch_image_checkbox.toggled.connect(lambda: self.change_prefs("stretch_image", self.stretch_image_checkbox.isChecked()))
-        self.use_crosshair_checkbox.toggled.connect(lambda: self.change_prefs("use_crosshair", self.use_crosshair_checkbox.isChecked()))
-        self.show_color_checkbox.toggled.connect(lambda: self.change_prefs("show_color", self.show_color_checkbox.isChecked()))
+        self.active_redraw_checkbox.toggled.connect(lambda: self.change_preference("active_redraw", self.active_redraw_checkbox.isChecked()))
+        self.active_table_checkbox.toggled.connect(lambda: self.change_preference("active_table", self.active_table_checkbox.isChecked()))
+        self.active_overlaps_checkbox.toggled.connect(lambda: self.change_preference("active_overlaps", self.active_overlaps_checkbox.isChecked()))
+        self.check_overlaps_checkbox.toggled.connect(lambda: self.change_preference("check_overlaps", self.check_overlaps_checkbox.isChecked()))
+        self.crop_image_checkbox.toggled.connect(lambda: self.change_preference("crop_image", self.crop_image_checkbox.isChecked()))
+        self.stretch_image_checkbox.toggled.connect(lambda: self.change_preference("stretch_image", self.stretch_image_checkbox.isChecked()))
+        self.use_crosshair_checkbox.toggled.connect(lambda: self.change_preference("use_crosshair", self.use_crosshair_checkbox.isChecked()))
+        self.show_color_checkbox.toggled.connect(lambda: self.change_preference("show_color", self.show_color_checkbox.isChecked()))
 
         #Default settings.
+        #Technically some of these don't need to be here and can instead be in drawing_area
+        #but I found it easier to refer to these values here rather than doing it across classes
         self.settings = {
             "active_redraw":True,
             "active_table":False,
@@ -388,7 +388,7 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
             self.table_widget.setColumnCount(4)
 
         #self.resize(500, 500)
-    def change_prefs(self, preference, value):
+    def change_preference(self, preference, value):
         '''Change `preference` to `value` and perform additional actions as necessary.
         This includes updating preferences.json.\n
         Available preferences (all `bool`, except the last two):\n
@@ -404,11 +404,12 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         `default_width (int)`: The default width of rectangles in pixels.'''
         #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
         self.settings[preference] = value
+
         #rewrite as dict later?
         if preference == "active_redraw":
-            self.drawing_area.real_time_rects = value
+            self.drawing_area.settings['real_time_rects'] = value
         if preference == "active_table":
-            self.drawing_area.real_time_table = value
+            self.drawing_area.settings['real_time_rects'] = value
         if preference == "use_crosshair":
             if value:
                 self.drawing_area.setCursor(QCursor(Qt.CrossCursor))
@@ -421,6 +422,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
         '''Update self.settings based on values read from preferences.json.
         Remove if the __init__ call becomes the only call.'''
         self.settings = get_prefs()
+
+        #to unpack a list and expand it for arguments, place an asterisk before the list
+        #see https://stackoverflow.com/questions/3941517/converting-list-to-args-when-calling-function
+        self.drawing_area.settings['default_pen_color'] = QColor(*self.settings['default_color'])
 
         if self.settings['check_overlaps'] and self.settings['show_color']:
             pass
@@ -520,10 +525,10 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
     def change_pen_color(self):
         '''Open a dialog allowing the user to change the default rectangle color.'''
         new_color = QColorDialog.getColor(self.drawing_area.penColor())
-        print(new_color.getRgb()) #returns a standard rgba tuple
-        print(new_color.getRgb()[2])
         if new_color.isValid():
             self.drawing_area.set_pen_color(new_color)
+            self.change_preference('default_color', list(new_color.getRgb()))
+            self.drawing_area.draw_all_rects() #reflect these changes
     def change_pen_width(self):
         '''Open a dialog allowing the user to change the default rectangle width.'''
         new_width, response = QInputDialog.getInt(self, "Set New Pen Width",
@@ -531,6 +536,8 @@ class ApplicationWindow(QMainWindow, Ui_MainWindow):
                                                   self.drawing_area.penWidth(), 1, 50, 1)
         if response:
             self.drawing_area.set_pen_width(new_width)
+            self.change_preference('default_width', new_width)
+            self.drawing_area.draw_all_rects()
     def about(self):
         '''Opens this program's about dialog.'''
         QMessageBox.about(self, "About RectangleMappingTool",
