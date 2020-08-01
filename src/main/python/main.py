@@ -67,12 +67,12 @@ default_prefpath = appctxt.get_resource('default.json')
 #endregion imports
 
 '''todo (vaguely in this order):
-        full settings implementation (logic)
+        done - full settings implementation (logic)
         clear field button
-        disable live overlap calculation in table if live table is disabled
-        forced resize option (define custom canvas area, preload)
-        resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
-        resize logic post image load
+        disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
+        done - forced resize option (define custom canvas area, preload)
+        done - resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
+        done - resize logic post image load
         conversion table
         csv export
         custom ordering of csv with qlistwidget
@@ -119,18 +119,17 @@ def write_prefs(data):
     pref_file.write(json.dumps(data, indent=4))
     pref_file.close()
 
-class ScribbleArea(QtWidgets.QWidget):
+class CanvasArea(QtWidgets.QWidget):
     '''The primary canvas on which the user draws rectangles.
     
-    Note that ScribbleArea is referred to as "the canvas" across (most) docstrings and comments.
-    This class may change to "CanvasArea" in the future to match.'''
+    Note that CanvasArea is referred to as "the canvas" across (most) docstrings and comments.'''
     #these are custom signals that will not work if placed in __init__
     #they must be class variables/attributes declared here
     dataChanged = QtCore.pyqtSignal()
     posChanged = QtCore.pyqtSignal(int, int)
     sizeChanged = QtCore.pyqtSignal()
     def __init__(self, parent=None):
-        super(ScribbleArea, self).__init__(parent)
+        super(CanvasArea, self).__init__(parent)
 
         #instance attributes...
         #self.setAttribute(QtCore.Qt.WA_StaticContents)
@@ -259,7 +258,7 @@ class ScribbleArea(QtWidgets.QWidget):
             self.resize_image(self.image, QtCore.QSize(new_width, new_height))
             self.update()
 
-        super(ScribbleArea, self).resizeEvent(event)
+        super(CanvasArea, self).resizeEvent(event)
 
     def draw_all_rects(self):
         '''Redraw all rectangles, iterating over each rectangle object in self.rects.'''
@@ -357,7 +356,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         i could not get it to do that
         '''
         #region Canvas initialization
-        self.drawing_area = ScribbleArea(self.scrollAreaWidgetContents)
+        #I decided to not rename "drawing_area" to "canvas_area" for clarity reasons
+        #there is no difference between "canvas_area" and "CanvasArea" when set out loud
+        #so they'll stey different
+        self.drawing_area = CanvasArea(self.scrollAreaWidgetContents)
         self.container_left.setWidgetResizable(True)
         left_layout = QtWidgets.QVBoxLayout()
         left_layout.addWidget(self.drawing_area)
@@ -603,7 +605,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''Change the size of the canvas to that specified in `canvas_width_edit` and
         `canvas_height_edit`. This is influenced by the `crop_image` and `stretch_image` settings.
         Note that the image and canvas maniuplation are not actually done here - they are done
-        in ScribbleArea itself.'''
+        in CanvasArea itself.'''
         new_width = int(self.canvas_width_edit.text())
         new_height = int(self.canvas_height_edit.text())
         new_size = QtCore.QSize(new_width, new_height)
