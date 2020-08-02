@@ -47,7 +47,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -359,41 +359,26 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QPushButton" name="export_csv_button">
           <property name="text">
-           <string>You can also add the following fields:</string>
+           <string>Export to .csv</string>
           </property>
          </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QCheckBox" name="overlaps_checkbox">
-            <property name="text">
-             <string>Overlaps</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="color_checkbox">
-            <property name="text">
-             <string>Color</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="custom_checkbox">
-            <property name="text">
-             <string>Custom fields</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Advanced export includes the ability to reorder, select, and preview the fields used when exporting. This opens a new window.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="export_csv_button">
+         <widget class="QPushButton" name="export_advanced_button">
           <property name="text">
-           <string>Export to .csv</string>
+           <string>Advanced export</string>
           </property>
          </widget>
         </item>

@@ -69,12 +69,12 @@ default_prefpath = appctxt.get_resource('default.json')
 '''todo (vaguely in this order):
         done - full settings implementation (logic)
         done - clear field button
-        disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
         done - forced resize option (define custom canvas area, preload)
         done - resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
         done - resize logic post image load
         done - try qdoublevalidator/qvalidator for the conversion handles
-        conversion table
+        done - conversion table
+        done - qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
         csv export
         custom ordering of csv with qlistwidget
         fstring export
@@ -91,8 +91,8 @@ default_prefpath = appctxt.get_resource('default.json')
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
         docstring standards conformity
         other pylint stuff (probably in a fork)
-        qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
         unbreak the overlap system (which doesn't even work correctly in its current state)
+        disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
         unbreak the draw system
 '''
 
@@ -159,7 +159,7 @@ class CanvasArea(QtWidgets.QWidget):
         }
     def open_image(self, file_name):
         '''Sets the image at `file_name` to be the canvas background.
-        It will then resize the canvas as needed and redraw rectangles.'''        
+        It will then resize the canvas as needed and redraw rectangles.'''
         self.loaded_image_path = file_name
         self.calculate_sizes()
         self.draw_all_rects()
@@ -633,10 +633,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 #now figure out how long the handle segments are in the handle rectangle
                 #and add them to the first conversion handle to find their final converted position
                 #then round them to the desired number of places
-                x1_equiv = round((conversion_width*x1_ratio)+self.conversion_values['x1'],places)
-                y1_equiv = round((conversion_height*y1_ratio)+self.conversion_values['y1'],places)
-                x2_equiv = round((conversion_width*x2_ratio)+self.conversion_values['x1'],places)
-                y2_equiv = round((conversion_height*y2_ratio)+self.conversion_values['y1'],places)
+                x1_equiv = round((conversion_width*x1_ratio)+self.conversion_values['x1'], places)
+                y1_equiv = round((conversion_height*y1_ratio)+self.conversion_values['y1'], places)
+                x2_equiv = round((conversion_width*x2_ratio)+self.conversion_values['x1'], places)
+                y2_equiv = round((conversion_height*y2_ratio)+self.conversion_values['y1'], places)
 
                 self.converted_table_widget.setRowCount(row_number+1)
                 self.converted_table_widget.setItem(row_number, 0, QtWidgets.QTableWidgetItem(str(x1_equiv)))
