@@ -38,7 +38,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>478</width>
+         <width>457</width>
          <height>620</height>
         </rect>
        </property>
@@ -204,7 +204,7 @@
         <item>
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>You can define the equivalent points for the top-left and bottom-right corners of the drawing area, which will allow you to convert the pixel-based coordinates of a rectangle into a different numerical format (such as GPS bounding coordinates).</string>
+           <string>You can define equivalent points/handles for the top-left and bottom-right corners of the drawing area, which will allow you to convert the pixel-based coordinates of a rectangle into a different numerical format (such as GPS bounding coordinates). Empty values default to 0.</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -521,7 +521,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>428</width>
+             <width>454</width>
              <height>770</height>
             </rect>
            </property>

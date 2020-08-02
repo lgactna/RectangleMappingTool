@@ -73,7 +73,7 @@ default_prefpath = appctxt.get_resource('default.json')
         done - forced resize option (define custom canvas area, preload)
         done - resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
         done - resize logic post image load
-        try qdoublevalidator/qvalidator for the conversion handles
+        done - try qdoublevalidator/qvalidator for the conversion handles
         conversion table
         csv export
         custom ordering of csv with qlistwidget
@@ -651,32 +651,47 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''Update the coordinate labels below the canvas.'''
         self.coord_label.setText("x:"+str(x_pos)+" y:"+str(y_pos))
     def set_conversion_values(self):
+        '''Validate the entered conversion values/handles.
+        If valid, set these handles to self.conversion_values.\n
+        Valid handles must be convertible into floats by Python
+        and 2nd handles must always be greater than the 1st handles
+        of their respective axes.'''
         #validation
         try:
             #ideally I would've done self.formLayout.findChildren
             #however as it turns out ownership of the lineedits is tab_2
             #see https://stackoverflow.com/questions/3077192/get-a-layouts-widgets-in-pyqt
+            values = []
             for lineedit in self.tab_2.findChildren(QtWidgets.QLineEdit):
                 if lineedit.text() == "": #they can't be blank
-                    raise ValueError
+                    lineedit.setText("0")
                 #the only case i think this throws an error is if bad e notation is typed in
                 #trailing/leading decimals are ok
                 #as is <float>e<int>
-                float(lineedit.text())
-            print("validation was ok")
+                values.append(float(lineedit.text()))
+            print("float conversion was ok")
+            #check if x1 is less than x2 and y1 is less than y2
+            #this makes sure that the rectangle and its handles are in the right direction
+            #from testing it seems that the lineedits are always returned from findChildren in the same order
+            #so this *should* always work
+            if values[0] > values[2] or values[1] > values[3]:
+                raise ValueError
+            print("rectangle validation was ok")
         except ValueError:
             QtWidgets.QMessageBox.critical(self, "Invalid value entered",
-                                          'At least one conversion handle is invalid and could not '
-                                          'be converted to a floating-point number by Python.\n'
-                                          'Ensure that you have entered the correct values. Note that '
-                                          'empty values are invalid and will not implicitly be converted '
-                                          'to 0.\n'
-                                          'E notation is valid in the format <float>e<int>.',
+                                          '<p>At least one conversion handle is invalid. This typically means:</p>'
+                                          '<ul><li>a number could not be converted to a floating-point number by Python, or</li>\n'
+                                          '<li>the second handle of either axis is less than the first handle.\n</li></ul>'
+                                          '<p>Ensure that you have entered the correct values. Note that '
+                                          'empty values will be implicitly converted to 0.</p>'
+                                          '<p>E notation is valid in the format &lt;float&gt;e&lt;int&gt;.</p>',
                                           QtWidgets.QMessageBox.Ok)
             return None
-        #validation
         #set to instance attr
-        #uhhh
+        self.conversion_values['x1'] = float(self.conv_x1_edit.text())
+        self.conversion_values['y1'] = float(self.conv_y1_edit.text())
+        self.conversion_values['x2'] = float(self.conv_x2_edit.text())
+        self.conversion_values['y2'] = float(self.conv_y2_edit.text())
         #i'm guessing conversion table calcs should be in update_table
         #soon to be update_tables
     #region Actions
