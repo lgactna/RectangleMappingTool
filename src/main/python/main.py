@@ -68,11 +68,12 @@ default_prefpath = appctxt.get_resource('default.json')
 
 '''todo (vaguely in this order):
         done - full settings implementation (logic)
-        clear field button
+        done - clear field button
         disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
         done - forced resize option (define custom canvas area, preload)
         done - resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
         done - resize logic post image load
+        try qdoublevalidator/qvalidator for the conversion handles
         conversion table
         csv export
         custom ordering of csv with qlistwidget
@@ -189,7 +190,7 @@ class CanvasArea(QtWidgets.QWidget):
         elif self.settings['stretch_image'] and (image_size.width() < canvas_size.width() or image_size.height() < canvas_size.height()):
             if self.settings['keep_ratio']:
                 #scale the size to the largest aspect ratio-preserving size within canvas_size.width() and canvas_size.height()
-                image_size.scale(canvas_size.width(),canvas_size.height(),QtCore.Qt.KeepAspectRatio)
+                image_size.scale(canvas_size.width(), canvas_size.height(), QtCore.Qt.KeepAspectRatio)
                 self.loaded_image_size = image_size
             else:
                 self.loaded_image_size = canvas_size
@@ -221,6 +222,7 @@ class CanvasArea(QtWidgets.QWidget):
         del self.rects[-1]
         self.draw_all_rects()
         #we also need to update the table here
+        #will be done as part of the more expansive undo rework
 
     def mousePressEvent(self, event): # pylint: disable=invalid-name
         if event.button() == QtCore.Qt.LeftButton:
@@ -372,7 +374,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.drawing_area.dataChanged.connect(self.update_table)
         self.drawing_area.posChanged.connect(self.update_coords)
-        self.drawing_area.sizeChanged.connect(self.update_size_labels)
+        self.drawing_area.sizeChanged.connect(self.update_size_text)
         #endregion
 
         #region Action signals and slots
@@ -382,6 +384,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionGitHub_Repository.triggered.connect(self.open_github)
         self.actionAbout.triggered.connect(self.about)
         self.actionOpen_image.triggered.connect(self.open)
+        self.actionClear_all.triggered.connect(self.clear_all)
         #endregion
 
         #region Tab 1: Coordinate Table
@@ -594,20 +597,40 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Since the color field is planned to say "Default" when using to the default pen color\n
         (as opposed to explicitly defining the rgba value), these "default-colored" rectangles
         should immediately reflect changes to the default pen color.'''
+        #calling draw_all_rects during initialization throws an error that the painter is not active
+        #(QPainter::setPen: Painter not active)
+        #this seems to have no long-lasting effects so i won't implement a check to ensure
+        #drawing_area exists before finishing update_all()
         self.drawing_area.draw_all_rects()
         self.update_table()
     def change_canvas_size(self):
         '''Change the size of the canvas to that specified in `canvas_width_edit` and
-        `canvas_height_edit`. This is influenced by the `crop_image` and `stretch_image` settings.
-        Note that the image and canvas maniuplation are not actually done here - they are done
-        in CanvasArea itself.'''
+        `canvas_height_edit`.\n
+        Note that image-canvas maniuplation is not actually done here - they are done
+        in CanvasArea itself. This means the `crop_image` and `stretch_image` settings
+        have no effect here.\n
+        The conversion labels are also updated here, as well.'''
         new_width = int(self.canvas_width_edit.text())
         new_height = int(self.canvas_height_edit.text())
         new_size = QtCore.QSize(new_width, new_height)
         self.drawing_area.setFixedSize(new_size)
-    def update_size_labels(self):
-        self.canvas_width_edit.setText(str(self.drawing_area.size().width()))
-        self.canvas_height_edit.setText(str(self.drawing_area.size().height()))
+        self.conv_x2_label.setText("Bottom-right, x (x = %s px)"%new_width)
+        self.conv_y2_label.setText("Bottom-right, y (y = %s px)"%new_height)
+    def update_size_text(self):
+        '''Update UI text to reflect the current size of the canvas.\n
+        This includes the canvas size QLineEdits on the Settings tab and the
+        conversion labels on the Conversion tab.'''
+        width = str(self.drawing_area.size().width())
+        height = str(self.drawing_area.size().height())
+        self.canvas_width_edit.setText(width)
+        self.canvas_height_edit.setText(height)
+        self.conv_x2_label.setText("Bottom-right, x (x = %s px)"%width)
+        self.conv_y2_label.setText("Bottom-right, y (y = %s px)"%height)
+    def clear_all(self):
+        '''Clear all data (after warning the user).'''
+        if self.clear_prompt():
+            self.drawing_area.rects = []
+            self.update_all()
     def remove_last(self):
         '''Remove the most recently added row.'''
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
@@ -634,7 +657,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
                     if response == QtWidgets.QMessageBox.Yes:
                         self.drawing_area.rects = []
-                        self.update_table()
+                        self.update_all()
                 self.drawing_area.open_image(file_name)
                 #at this point, we should execute the resize logic
     def undo(self):
@@ -684,6 +707,20 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return True
         elif ret == QtWidgets.QMessageBox.Cancel:
             return False
+    def clear_prompt(self):
+        '''Warns the user that they are about to clear all data.
+        Returns `True` if "Yes" is selected.
+        Returns `False` otherwise.'''
+        ret = QtWidgets.QMessageBox.warning(self, "Clear all data?",
+                                          'Are you sure you want to clear all data?\n'
+                                          'This will delete all table entries and drawn rectangles.',
+                                          QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel)
+        #i would use "clear", "discard", or "reset", but each of those have different meanings
+        #than what i would want here
+        if ret == QtWidgets.QMessageBox.Yes:
+            return True
+        elif ret == QtWidgets.QMessageBox.Cancel:
+            return False
     def close_prompt(self):
         '''Warns the user if the canvas has been modified.
         This is determined by the presence of any rectangles.
@@ -720,7 +757,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
                 "%s Files (*.%s);;All Files (*)" % (file_format.upper(), file_format))
         if file_name:
-            return self.scribbleArea.save_image(file_name, file_format)
+            return self.CanvasArea.save_image(file_name, file_format)
 
         return False
     '''
