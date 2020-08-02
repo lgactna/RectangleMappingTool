@@ -372,7 +372,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.setFixedSize(400, 300)
         self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor)) #make this responsive to a setting
 
-        self.drawing_area.dataChanged.connect(self.update_table)
+        self.drawing_area.dataChanged.connect(self.update_tables)
         self.drawing_area.posChanged.connect(self.update_coords)
         self.drawing_area.sizeChanged.connect(self.update_size_text)
         #endregion
@@ -554,16 +554,18 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             default_prefs = get_prefs("default")
             write_prefs(default_prefs)
             self.load_from_prefs()
-    def update_table(self):
-        '''Rebuild the entire table based on drawing_area.rects.'''
+    def update_tables(self):
+        '''Rebuild the coordinate and conversion tables based on drawing_area.rects.'''
         #i hate this
         #but i want to finish other functionality before turning to efficiency changes so here we are
+        #takes up to 40% cpu!! actual garbage
 
         #we rebuild the *entire* table on each call
         self.table_widget.setRowCount(0)
+        rectangles = self.drawing_area.rects
 
-        for row_number in range(0, len(self.drawing_area.rects)):
-            coords = self.drawing_area.rects[row_number].getCoords()
+        for row_number in range(0, len(rectangles)):
+            coords = rectangles[row_number].getCoords()
             #print("adding row %s" % str(int(row_number)+1))
             self.table_widget.setRowCount(row_number+1)
             self.table_widget.setItem(row_number, 0, QtWidgets.QTableWidgetItem(str(coords[0])))
@@ -576,8 +578,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #we can perform brute-force checking with QtCore.QRect.intersects(<QtCore.QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
         #add an "overlaps with" column if this is enabled
+        #this doesn't seem to work for the first few rectangles??
         if self.settings['check_overlaps']:
-            rectangles = self.drawing_area.rects
             #we clear the entire column on each full overlap check
             #while implementing an array for each cell would be much better for various calculations and operations
             #maybe later
@@ -603,7 +605,37 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         else:
                             self.table_widget.setItem(rect2_index, 4,
                                                       QtWidgets.QTableWidgetItem(current+","+str(rect1_index+1)))
-            #print("---")
+        #i seriously doubt there's any need to have a live conversion of this table
+        #will fix later
+        self.converted_table_widget.setRowCount(0)
+        if self.conversion_values['x1'] != None:
+            #define line segment lengths
+            canvas_width = self.drawing_area.size().width()
+            canvas_height = self.drawing_area.size().height()
+            conversion_width = self.conversion_values['x2']-self.conversion_values['x1']
+            conversion_height = self.conversion_values['y2']-self.conversion_values['y1']
+
+            for row_number in range(0, len(rectangles)):
+                coords = rectangles[row_number].getCoords()
+                #figure out what ratio of the whole each handle is
+                x1_ratio = coords[0]/canvas_width
+                y1_ratio = coords[1]/canvas_height
+                x2_ratio = coords[2]/canvas_width
+                y2_ratio = coords[3]/canvas_height
+
+                #now figure out how long the handle segments are in the handle rectangle
+                #and add them to the first conversion handle to find their final converted position
+                #need
+                x1_equiv = (conversion_width*x1_ratio)+self.conversion_values['x1']
+                y1_equiv = (conversion_height*y1_ratio)+self.conversion_values['y1']
+                x2_equiv = (conversion_width*x2_ratio)+self.conversion_values['x1']
+                y2_equiv = (conversion_height*y2_ratio)+self.conversion_values['y1']
+
+                self.converted_table_widget.setRowCount(row_number+1)
+                self.converted_table_widget.setItem(row_number, 0, QtWidgets.QTableWidgetItem(str(x1_equiv)))
+                self.converted_table_widget.setItem(row_number, 1, QtWidgets.QTableWidgetItem(str(y1_equiv)))
+                self.converted_table_widget.setItem(row_number, 2, QtWidgets.QTableWidgetItem(str(x2_equiv)))
+                self.converted_table_widget.setItem(row_number, 3, QtWidgets.QTableWidgetItem(str(y2_equiv)))
     def update_all(self):
         '''Shorthand call to redraw all rectangles and reprocess the coordinate table.\n
         Might need to be updated with the conversion table in the future.
@@ -615,7 +647,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #this seems to have no long-lasting effects so i won't implement a check to ensure
         #drawing_area exists before finishing update_all()
         self.drawing_area.draw_all_rects()
-        self.update_table()
+        self.update_tables()
     def change_canvas_size(self):
         '''Change the size of the canvas to that specified in `canvas_width_edit` and
         `canvas_height_edit`.\n
@@ -677,6 +709,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if values[0] > values[2] or values[1] > values[3]:
                 raise ValueError
             print("rectangle validation was ok")
+            #check if aspect ratio was preserved
+            canvas_ratio = self.drawing_area.size().height()/self.drawing_area.size().width()
+            conv_ratio = (values[3]-values[1])/(values[2]-values[0])
+            #chances are that nobody will ever have the exact same ratio as the canvas
+            #but it's here anyways as a warning
+            if canvas_ratio != conv_ratio:
+                QtWidgets.QMessageBox.information(self, "Aspect ratio is not exact",
+                                          '<p>The ratio of the canvas is %s, while that of your handles is %s.</p>'
+                                          '<p>Converted values are proportional to the size of the rectangle containing them. '
+                                          'You may end up with some stretched/inaccurate values as a result.</p>'%(canvas_ratio, conv_ratio),
+                                          QtWidgets.QMessageBox.Ok)
         except ValueError:
             QtWidgets.QMessageBox.critical(self, "Invalid value entered",
                                           '<p>At least one conversion handle is invalid. This typically means:</p>'
@@ -692,8 +735,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conversion_values['y1'] = float(self.conv_y1_edit.text())
         self.conversion_values['x2'] = float(self.conv_x2_edit.text())
         self.conversion_values['y2'] = float(self.conv_y2_edit.text())
-        #i'm guessing conversion table calcs should be in update_table
-        #soon to be update_tables
+        self.update_tables()
     #region Actions
     def open(self):
         '''Handles opening an image.
