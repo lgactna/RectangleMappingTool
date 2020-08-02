@@ -392,7 +392,13 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 2: Conversion
-
+        #restricts the entry to a double with one decimal and the letter "e"
+        #there is also a second process to ensure the values are actually valid python floats
+        self.conv_x1_edit.setValidator(QtGui.QDoubleValidator())
+        self.conv_y1_edit.setValidator(QtGui.QDoubleValidator())
+        self.conv_x2_edit.setValidator(QtGui.QDoubleValidator())
+        self.conv_y2_edit.setValidator(QtGui.QDoubleValidator())
+        self.set_handles_button.clicked.connect(self.set_conversion_values)
         #endregion
 
         #region Tab 3: Export Data
@@ -419,7 +425,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.set_canvas_size_button.clicked.connect(self.change_canvas_size)
         #endregion
 
-        #region Default settings
+        #region Instance attributes
         #Technically some of these don't need to be here and can instead be in drawing_area
         #but I found it easier to refer to these values here rather than doing it across classes
         self.settings = {
@@ -434,6 +440,13 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "show_color":False,
             "default_color":[0, 0, 255, 255],
             "default_width":1
+        }
+
+        self.conversion_values = {
+            "x1":None,
+            "y1":None,
+            "x2":None,
+            "y2":None
         }
         #endregion
 
@@ -637,6 +650,35 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def update_coords(self, x_pos, y_pos):
         '''Update the coordinate labels below the canvas.'''
         self.coord_label.setText("x:"+str(x_pos)+" y:"+str(y_pos))
+    def set_conversion_values(self):
+        #validation
+        try:
+            #ideally I would've done self.formLayout.findChildren
+            #however as it turns out ownership of the lineedits is tab_2
+            #see https://stackoverflow.com/questions/3077192/get-a-layouts-widgets-in-pyqt
+            for lineedit in self.tab_2.findChildren(QtWidgets.QLineEdit):
+                if lineedit.text() == "": #they can't be blank
+                    raise ValueError
+                #the only case i think this throws an error is if bad e notation is typed in
+                #trailing/leading decimals are ok
+                #as is <float>e<int>
+                float(lineedit.text())
+            print("validation was ok")
+        except ValueError:
+            QtWidgets.QMessageBox.critical(self, "Invalid value entered",
+                                          'At least one conversion handle is invalid and could not '
+                                          'be converted to a floating-point number by Python.\n'
+                                          'Ensure that you have entered the correct values. Note that '
+                                          'empty values are invalid and will not implicitly be converted '
+                                          'to 0.\n'
+                                          'E notation is valid in the format <float>e<int>.',
+                                          QtWidgets.QMessageBox.Ok)
+            return None
+        #validation
+        #set to instance attr
+        #uhhh
+        #i'm guessing conversion table calcs should be in update_table
+        #soon to be update_tables
     #region Actions
     def open(self):
         '''Handles opening an image.
