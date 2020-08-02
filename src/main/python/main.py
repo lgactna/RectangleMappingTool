@@ -460,12 +460,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings[preference] = value
 
         #rewrite as dict later?
-        #for drawing_area preferences, do "if preference in self.settings..."
-
-        if preference == "active_redraw":
-            self.drawing_area.settings['active_redraw'] = value
-        if preference == "active_table":
-            self.drawing_area.settings['active_table'] = value
+        if preference in self.drawing_area.settings:
+            self.drawing_area.settings[preference] = value
         if preference == "use_crosshair":
             if value:
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
@@ -478,10 +474,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.active_overlaps_checkbox.setEnabled(False)
                 self.active_overlaps_checkbox.setChecked(False)
                 self.settings['active_overlaps'] = False
-        if preference == "crop_image":
-            self.drawing_area.settings['crop_image'] = value
         if preference == "stretch_image":
-            self.drawing_area.settings['stretch_image'] = value
             if value:
                 self.keep_ratio_checkbox.setEnabled(True)
             else:
