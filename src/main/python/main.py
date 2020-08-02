@@ -89,7 +89,7 @@ default_prefpath = appctxt.get_resource('default.json')
         toolbar (if needed)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
         docstring standards conformity
-        other pylint stuff
+        other pylint stuff (probably in a fork)
         qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
         unbreak the overlap system (which doesn't even work correctly in its current state)
         unbreak the draw system
@@ -230,10 +230,10 @@ class CanvasArea(QtWidgets.QWidget):
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
         self.posChanged.emit(event.pos().x(), event.pos().y())
         if (event.buttons() & QtCore.Qt.LeftButton) and self.scribbling:
-            if self.settings['real_time_rects']:
+            if self.settings['active_redraw']:
                 self.rects.append(QtCore.QRect(self.starting_point, event.pos()))
                 self.draw_all_rects()
-                if self.settings['real_time_table']:
+                if self.settings['active_table']:
                     self.dataChanged.emit() #this is used for "real-time" table updates
                 del self.rects[-1]
 
@@ -460,10 +460,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings[preference] = value
 
         #rewrite as dict later?
+        #for drawing_area preferences, do "if preference in self.settings..."
+
         if preference == "active_redraw":
-            self.drawing_area.settings['real_time_rects'] = value
+            self.drawing_area.settings['active_redraw'] = value
         if preference == "active_table":
-            self.drawing_area.settings['real_time_table'] = value
+            self.drawing_area.settings['active_table'] = value
         if preference == "use_crosshair":
             if value:
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
