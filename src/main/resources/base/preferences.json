@@ -4,7 +4,7 @@
     "active_overlaps": false,
     "check_overlaps": true,
     "crop_image": false,
-    "stretch_image": true,
+    "stretch_image": false,
     "keep_ratio": true,
     "use_crosshair": true,
     "show_color": false,
@@ -14,5 +14,6 @@
         255,
         255
     ],
-    "default_width": 1
+    "default_width": 1,
+    "conv_round": 6
 }

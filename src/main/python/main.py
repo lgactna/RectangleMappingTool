@@ -409,6 +409,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.set_color_button.clicked.connect(self.change_pen_color)
         self.set_width_button.clicked.connect(self.change_pen_width)
         self.reset_settings_button.clicked.connect(self.reset_prefs)
+        #fun fact: this validator seems to prevent blank values from emitting editingFinished
+        self.conv_round_edit.setValidator(QtGui.QIntValidator())
+        self.conv_round_edit.editingFinished.connect(lambda: self.change_preference("conv_round", int(self.conv_round_edit.text())))
 
         #im not sure if there's a better way to do this lol
         #pylint is fuming but my screen is wide enough so ill change it later
@@ -439,7 +442,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "use_crosshair":True,
             "show_color":False,
             "default_color":[0, 0, 255, 255],
-            "default_width":1
+            "default_width":1,
+            "conv_round":6
         }
 
         self.conversion_values = {
@@ -495,7 +499,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.keep_ratio_checkbox.setEnabled(True)
             else:
                 self.keep_ratio_checkbox.setEnabled(False)
-
+        if preference == "conv_round":
+            self.update_tables()
 
         write_prefs(self.settings)
     def load_from_prefs(self):
@@ -534,6 +539,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.keep_ratio_checkbox.setChecked(self.settings['keep_ratio'])
         self.use_crosshair_checkbox.setChecked(self.settings['use_crosshair'])
         self.show_color_checkbox.setChecked(self.settings['show_color'])
+        self.conv_round_edit.setText(str(self.settings['conv_round']))
 
         #also enabled/disabled logic
         if self.settings['active_table'] and self.settings['check_overlaps']:
@@ -614,6 +620,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             canvas_height = self.drawing_area.size().height()
             conversion_width = self.conversion_values['x2']-self.conversion_values['x1']
             conversion_height = self.conversion_values['y2']-self.conversion_values['y1']
+            places = self.settings['conv_round']
 
             for row_number in range(0, len(rectangles)):
                 coords = rectangles[row_number].getCoords()
@@ -625,11 +632,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 #now figure out how long the handle segments are in the handle rectangle
                 #and add them to the first conversion handle to find their final converted position
-                #need
-                x1_equiv = (conversion_width*x1_ratio)+self.conversion_values['x1']
-                y1_equiv = (conversion_height*y1_ratio)+self.conversion_values['y1']
-                x2_equiv = (conversion_width*x2_ratio)+self.conversion_values['x1']
-                y2_equiv = (conversion_height*y2_ratio)+self.conversion_values['y1']
+                #then round them to the desired number of places
+                x1_equiv = round((conversion_width*x1_ratio)+self.conversion_values['x1'],places)
+                y1_equiv = round((conversion_height*y1_ratio)+self.conversion_values['y1'],places)
+                x2_equiv = round((conversion_width*x2_ratio)+self.conversion_values['x1'],places)
+                y2_equiv = round((conversion_height*y2_ratio)+self.conversion_values['y1'],places)
 
                 self.converted_table_widget.setRowCount(row_number+1)
                 self.converted_table_widget.setItem(row_number, 0, QtWidgets.QTableWidgetItem(str(x1_equiv)))
@@ -701,14 +708,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 #trailing/leading decimals are ok
                 #as is <float>e<int>
                 values.append(float(lineedit.text()))
-            print("float conversion was ok")
+            #print("float conversion was ok")
             #check if x1 is less than x2 and y1 is less than y2
             #this makes sure that the rectangle and its handles are in the right direction
             #from testing it seems that the lineedits are always returned from findChildren in the same order
             #so this *should* always work
             if values[0] > values[2] or values[1] > values[3]:
                 raise ValueError
-            print("rectangle validation was ok")
+            #print("rectangle validation was ok")
             #check if aspect ratio was preserved
             canvas_ratio = self.drawing_area.size().height()/self.drawing_area.size().width()
             conv_ratio = (values[3]-values[1])/(values[2]-values[0])

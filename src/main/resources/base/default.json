@@ -14,5 +14,6 @@
         255,
         255
     ],
-    "default_width": 1
+    "default_width": 1,
+    "conv_round": 6
 }

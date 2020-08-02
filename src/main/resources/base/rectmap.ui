@@ -18,16 +18,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="0">
-     <widget class="QLabel" name="coord_label">
-      <property name="text">
-       <string>x: 0 y: 0</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="0">
      <widget class="QScrollArea" name="container_left">
       <property name="widgetResizable">
@@ -45,13 +35,6 @@
       </widget>
      </widget>
     </item>
-    <item row="0" column="1" rowspan="2">
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="3">
      <widget class="QTabWidget" name="tabWidget">
       <property name="enabled">
@@ -64,7 +47,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -497,7 +480,7 @@
              <x>0</x>
              <y>0</y>
              <width>449</width>
-             <height>770</height>
+             <height>801</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
@@ -587,35 +570,35 @@
               </property>
              </widget>
             </item>
-            <item row="6" column="0" colspan="2">
+            <item row="7" column="0" colspan="2">
              <widget class="Line" name="line_3">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
              </widget>
             </item>
-            <item row="7" column="0" colspan="2">
+            <item row="8" column="0" colspan="2">
              <widget class="QLabel" name="label_11">
               <property name="text">
                <string>Appearance</string>
               </property>
              </widget>
             </item>
-            <item row="8" column="0" colspan="2">
+            <item row="9" column="0" colspan="2">
              <widget class="QPushButton" name="set_color_button">
               <property name="text">
                <string>Set default color</string>
               </property>
              </widget>
             </item>
-            <item row="9" column="0" colspan="2">
+            <item row="10" column="0" colspan="2">
              <widget class="QPushButton" name="set_width_button">
               <property name="text">
                <string>Set default pen width</string>
               </property>
              </widget>
             </item>
-            <item row="10" column="0">
+            <item row="11" column="0">
              <widget class="QCheckBox" name="use_crosshair_checkbox">
               <property name="text">
                <string/>
@@ -625,14 +608,14 @@
               </property>
              </widget>
             </item>
-            <item row="10" column="1">
+            <item row="11" column="1">
              <widget class="QLabel" name="label_21">
               <property name="text">
                <string>Use crosshair cursor (instead of an unmodified cursor).</string>
               </property>
              </widget>
             </item>
-            <item row="11" column="0" colspan="2">
+            <item row="12" column="0" colspan="2">
              <widget class="Line" name="line_2">
               <property name="minimumSize">
                <size>
@@ -645,14 +628,14 @@
               </property>
              </widget>
             </item>
-            <item row="12" column="0" colspan="2">
+            <item row="13" column="0" colspan="2">
              <widget class="QLabel" name="label_5">
               <property name="text">
                <string>Canvas/Drawing Area</string>
               </property>
              </widget>
             </item>
-            <item row="13" column="0" colspan="2">
+            <item row="14" column="0" colspan="2">
              <widget class="QLabel" name="label_26">
               <property name="text">
                <string>Input a new canvas size below and click &quot;Set new size&quot; to resize the canvas according to the additional rules below.</string>
@@ -663,6 +646,16 @@
              </widget>
             </item>
             <item row="15" column="0" colspan="2">
+             <widget class="QLabel" name="label_23">
+              <property name="text">
+               <string>Resizing the canvas after loading an image will always crop the image, anchored top-left.</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="0" colspan="2">
              <layout class="QHBoxLayout" name="horizontalLayout_4">
               <item>
                <layout class="QFormLayout" name="formLayout_3">
@@ -705,7 +698,7 @@
               </item>
              </layout>
             </item>
-            <item row="16" column="0" colspan="2">
+            <item row="17" column="0" colspan="2">
              <widget class="QLabel" name="label_24">
               <property name="text">
                <string>The settings below are not retroactive if changed. You will need to reload the image and/or resize the canvas again.</string>
@@ -715,7 +708,7 @@
               </property>
              </widget>
             </item>
-            <item row="17" column="0" colspan="2">
+            <item row="18" column="0" colspan="2">
              <widget class="QLabel" name="label_14">
               <property name="text">
                <string>If the canvas size is set to be a value larger than the loaded image, the image will (by default) remain unstretched and the canvas will shrink to the image's size. You can change this option to stretch the image to the size of the canvas instead.</string>
@@ -725,79 +718,21 @@
               </property>
              </widget>
             </item>
-            <item row="18" column="0">
+            <item row="19" column="0">
              <widget class="QCheckBox" name="stretch_image_checkbox">
               <property name="text">
                <string/>
               </property>
              </widget>
             </item>
-            <item row="18" column="1">
+            <item row="19" column="1">
              <widget class="QLabel" name="label_17">
               <property name="text">
                <string>Stretch image to canvas.</string>
               </property>
              </widget>
             </item>
-            <item row="20" column="0" colspan="2">
-             <widget class="QLabel" name="label_18">
-              <property name="text">
-               <string>If the canvas size is set to be smaller than the loaded image, the canvas will (by default) grow to match the new image. You can change this option to crop the image instead, anchored to the top-left.</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="21" column="0">
-             <widget class="QCheckBox" name="crop_image_checkbox">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="21" column="1">
-             <widget class="QLabel" name="label_20">
-              <property name="text">
-               <string>Crop image to fit canvas.</string>
-              </property>
-             </widget>
-            </item>
-            <item row="22" column="0" colspan="2">
-             <widget class="Line" name="line_6">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="23" column="0" colspan="2">
-             <widget class="QPushButton" name="reset_settings_button">
-              <property name="text">
-               <string>Reset all settings to default</string>
-              </property>
-             </widget>
-            </item>
-            <item row="24" column="0" colspan="2">
-             <widget class="QLabel" name="label_25">
-              <property name="text">
-               <string>Reset all settings (except canvas size) to their default values. Note that this will affect any already-drawn rectangles.</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="14" column="0" colspan="2">
-             <widget class="QLabel" name="label_23">
-              <property name="text">
-               <string>Resizing the canvas after loading an image will always crop the image, anchored top-left.</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="19" column="0">
+            <item row="20" column="0">
              <widget class="QCheckBox" name="keep_ratio_checkbox">
               <property name="enabled">
                <bool>false</bool>
@@ -810,12 +745,81 @@
               </property>
              </widget>
             </item>
-            <item row="19" column="1">
+            <item row="20" column="1">
              <widget class="QLabel" name="label_27">
               <property name="text">
                <string>Keep aspect ratio on stretch.</string>
               </property>
              </widget>
+            </item>
+            <item row="21" column="0" colspan="2">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>If the canvas size is set to be smaller than the loaded image, the canvas will (by default) grow to match the new image. You can change this option to crop the image instead, anchored to the top-left.</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="22" column="0">
+             <widget class="QCheckBox" name="crop_image_checkbox">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="22" column="1">
+             <widget class="QLabel" name="label_20">
+              <property name="text">
+               <string>Crop image to fit canvas.</string>
+              </property>
+             </widget>
+            </item>
+            <item row="23" column="0" colspan="2">
+             <widget class="Line" name="line_6">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="24" column="0" colspan="2">
+             <widget class="QPushButton" name="reset_settings_button">
+              <property name="text">
+               <string>Reset all settings to default</string>
+              </property>
+             </widget>
+            </item>
+            <item row="25" column="0" colspan="2">
+             <widget class="QLabel" name="label_25">
+              <property name="text">
+               <string>Reset all settings (except canvas size) to their default values. Note that this will affect any already-drawn rectangles.</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0" colspan="2">
+             <layout class="QFormLayout" name="formLayout_5">
+              <item row="0" column="0">
+               <widget class="QLineEdit" name="conv_round_edit">
+                <property name="text">
+                 <string>6</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLabel" name="label_28">
+                <property name="text">
+                 <string>Round converted to this many decimal places.</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
@@ -823,6 +827,23 @@
         </item>
        </layout>
       </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="coord_label">
+      <property name="text">
+       <string>x: 0 y: 0</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="2">
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
      </widget>
     </item>
    </layout>
