@@ -65,7 +65,6 @@ from rectmap import Ui_MainWindow
 appctxt = ApplicationContext()
 prefpath = appctxt.get_resource('preferences.json')
 default_prefpath = appctxt.get_resource('default.json')
-csvpath = appctxt.get_resource('blank.csv')
 #endregion imports
 
 '''todo (vaguely in this order):
@@ -787,7 +786,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     row_data.append(self.table_widget.item(row_number, column_number).text())
                 data.append(row_data)
             except AttributeError:
-                print("bad data at %s, %s"%(row_number, column_number))
+                QtWidgets.QMessageBox.critical(self, "Export failed",
+                                     "<p>Error: bad data at row %s, column %s</p>"
+                                     "<p>If you're seeing this error in a public release, "
+                                     "then either you have an empty table or something's gone terribly "
+                                     "wrong.</p>"%(row_number+1, column_number+1),
+                                     QtWidgets.QMessageBox.Ok)
                 return None
         #print(header_column)
         #print(data)
@@ -796,12 +800,21 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         initialPath = QtCore.QDir.currentPath() + '/untitled.csv'
         file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
                 "CSV (Comma delimited) (*.csv);;All Files (*)")
-        if file_name:
-            with open(file_name, mode='w', newline='') as csv_file:
-                writer = csv.writer(csv_file)
+        try:
+            if file_name:
+                with open(file_name, mode='w', newline='') as csv_file:
+                    writer = csv.writer(csv_file)
 
-                writer.writerow(header_column)
-                writer.writerows(data)
+                    writer.writerow(header_column)
+                    writer.writerows(data)
+                    QtWidgets.QMessageBox.information(self, "Export complete",
+                                        "CSV saved!",
+                                        QtWidgets.QMessageBox.Ok)
+        except Exception as e:
+            #i have no idea how to trigger this manually so uhh
+            QtWidgets.QMessageBox.critical(self, "Export failed",
+                                     "<p>Error:</p><p>%s</p>"%e,
+                                     QtWidgets.QMessageBox.Ok)
     def open(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
