@@ -406,6 +406,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 3: Export Data
+        self.radio_group = QtWidgets.QButtonGroup()
+        for radio_button in self.tab_3.findChildren(QtWidgets.QRadioButton):
+            self.radio_group.addButton(radio_button)
+        self.radio_group.buttonClicked.connect(self.update_csv_export_text)
         self.export_csv_button.clicked.connect(self.simple_csv_export)
         self.export_advanced_button.clicked.connect(self.advanced_csv_export)
         #endregion
@@ -778,24 +782,70 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-1).setText(new_field_name)
         #print(self.table_widget.columnCount())
         #print(self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-2).text())
+    def update_csv_export_text(self, button):
+        '''Called when a button in self.radio_group is clicked, passing in the clicked button
+        `button`. Based on this button's text, update the description label below the radio buttons.'''
+        if button.text() == "Raw coordinates":
+            self.selection_label.setText("Raw coordinates: Export the raw pixel-based coordinates of the rectangles in the format x1, y1, x2, y2.")
+        elif button.text() == "Converted coordinates":
+            self.selection_label.setText("Converted coordinates: Export the converted coordinates of the rectangles in the format x1_conv, y1_conv, x2_conv, y2_conv.")
+        elif button.text() == "Both":
+            self.selection_label.setText("Both: Export both raw and converted coordinates in the format x1, y1, x2, y2, x1_conv, y1_conv, x2_conv, y2_conv.")
     def simple_csv_export(self):
-        #ask user for filepath here...
+        '''Export coordinate and/or converted point data, based on radio button selection.
+        If the user needs other fields or reordering, they will need to use the advanced
+        export option.\n
+        In addition, if the user has not defined coordinate handles, they will be unable to
+        export data on either converted or both mode. Throw a message box as a result.'''
         header_column = []
         data = []
-        for i in range(0, self.table_widget.columnCount()):
-            header_column.append(self.table_widget.horizontalHeaderItem(i).text())
+        
+        #get radio button state here and update the exports as necessary
+        #then set the final mode to an int
+        #i'm not sure if this is any more efficient than repeatedly checking strings
+        mode = self.radio_group.checkedButton().text()
+        if mode == "Raw coordinates":
+            mode = 1
+        elif mode == "Converted coordinates":
+            mode = 2
+        elif mode == "Both":
+            mode = 3
+        #stop execution if there are no coordinate handles defined for an export that requires them
+        if not self.conversion_values['x1'] and (mode == 2 or mode == 3):
+            QtWidgets.QMessageBox.information(self, "Coordinate handles not defined",
+                                     '<p>You cannot export data that does not exist! Define '
+                                     'coordinate handles in the Conversion tab before selecting '
+                                     'either the "Converted coordinates" or "Both" options.</p>',
+                                     QtWidgets.QMessageBox.Ok)
+            return None
+        if mode == 1 or mode == 3:
+            for i in range(0, 4):
+                header_column.append(self.table_widget.horizontalHeaderItem(i).text())
+        if mode == 2 or mode == 3:
+            for i in range(0, 4):
+                header_column.append(self.converted_table_widget.horizontalHeaderItem(i).text())
+        #we assume that both tables will have the same row count
+        position = "--"
         for row_number in range(0, self.table_widget.rowCount()):
             try:
                 row_data = []
-                for column_number in range(0, self.table_widget.columnCount()):
-                    row_data.append(self.table_widget.item(row_number, column_number).text())
+                if mode == 1 or mode == 3:
+                    position = "raw"
+                    for column_number in range(0, 4):
+                        row_data.append(self.table_widget.item(row_number, column_number).text())
+                if mode == 2 or mode == 3:
+                    position = "converted"
+                    for column_number in range(0, 4):
+                        row_data.append(self.converted_table_widget.item(row_number, column_number).text())
                 data.append(row_data)
             except AttributeError:
+                #i seriously don't know what would trigger this normally
+                #other than the empty table case
                 QtWidgets.QMessageBox.critical(self, "Export failed",
-                                     "<p>Error: bad data at row %s, column %s</p>"
+                                     "<p>Error: bad data at row %s, column %s - %s</p>"
                                      "<p>If you're seeing this error in a public release, "
                                      "then either you have an empty table or something's gone terribly "
-                                     "wrong.</p>"%(row_number+1, column_number+1),
+                                     "wrong.</p>"%(row_number+1, column_number+1, position),
                                      QtWidgets.QMessageBox.Ok)
                 return None
         #print(header_column)
@@ -951,9 +1001,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     '''
 
 class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
-    #see this link for returning values from a dialog as if it were a normal function
-    #https://stackoverflow.com/questions/37411750/pyqt-qdialog-return-response-yes-or-no
-    #might not need it though since this is application modal and everything can be done here
+    '''Opens the advanced CSV export window, where the user is able to reorder and change
+    what fields are exported. Includes a raw CSV preview as well as a table preview of
+    the results.'''
     def __init__(self):
         super().__init__()
         #keep the user from messing with existing data without exiting
@@ -961,17 +1011,6 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         self.ui = Ui_AdvExportWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Advanced CSV Export")
-    '''
-    def getValues(self):
-        return "eeeee"
-    @staticmethod
-    def launch():
-        dlg = AdvancedExportWindow()
-        r = dlg.exec_() #Using exec_() opens this window and blocks all other windows until this one is closed.
-        if r:
-            return dlg.getValues()
-        return None
-    '''
 
 class AppContext(ApplicationContext):
     '''fbs requires that one instance of ApplicationContext be instantiated.

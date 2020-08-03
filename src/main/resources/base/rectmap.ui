@@ -269,29 +269,29 @@
           </attribute>
           <column>
            <property name="text">
-            <string>x1</string>
+            <string>x1_conv</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>y1</string>
+            <string>y1_conv</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>x2</string>
+            <string>x2_conv</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>y2</string>
+            <string>y2_conv</string>
            </property>
           </column>
          </widget>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_4">
+      <widget class="QWidget" name="tab_3">
        <attribute name="title">
         <string>Export Data</string>
        </attribute>
@@ -351,7 +351,7 @@
         <item>
          <widget class="QLabel" name="selection_label">
           <property name="text">
-           <string>Selection description... Export the raw coordinates of the drawn rectangles, pixel based. The format is ....</string>
+           <string>Raw coordinates: Export the raw pixel-based coordinates of the rectangles in the format x1, y1, x2, y2.</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -368,7 +368,7 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Advanced export includes the ability to reorder, select, and preview the fields used when exporting. This opens a new window.</string>
+           <string>Advanced export includes the ability to reorder, select, and preview the fields used when exporting. If you need custom or non-coordinate fields, you must use advanced export. This opens a new window.</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -449,7 +449,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="tab_4">
        <attribute name="title">
         <string>Settings</string>
        </attribute>
