@@ -61,6 +61,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 #------
 from rectmap import Ui_MainWindow
+from advexport import Ui_AdvExportWindow
 #------
 appctxt = ApplicationContext()
 prefpath = appctxt.get_resource('preferences.json')
@@ -406,6 +407,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #region Tab 3: Export Data
         self.export_csv_button.clicked.connect(self.simple_csv_export)
+        self.export_advanced_button.clicked.connect(self.advanced_csv_export)
         #endregion
 
         #region Tab 4: Settings
@@ -815,6 +817,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QMessageBox.critical(self, "Export failed",
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
+    def advanced_csv_export(self):
+        self.export_window = AdvancedExportWindow()
+        self.export_window.show()
     def open_image(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
@@ -936,6 +941,29 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return self.CanvasArea.save_image(file_name, file_format)
 
         return False
+    '''
+
+class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
+    #see this link for returning values from a dialog as if it were a normal function
+    #https://stackoverflow.com/questions/37411750/pyqt-qdialog-return-response-yes-or-no
+    #might not need it though since this is application modal and everything can be done here
+    def __init__(self):
+        super().__init__()
+        #keep the user from messing with existing data without exiting
+        self.setWindowModality(QtCore.Qt.ApplicationModal) 
+        self.ui = Ui_AdvExportWindow()
+        self.ui.setupUi(self)
+        self.setWindowTitle("Advanced CSV Export")
+    '''
+    def getValues(self):
+        return "eeeee"
+    @staticmethod
+    def launch():
+        dlg = AdvancedExportWindow()
+        r = dlg.exec_() #Using exec_() opens this window and blocks all other windows until this one is closed.
+        if r:
+            return dlg.getValues()
+        return None
     '''
 
 class AppContext(ApplicationContext):
