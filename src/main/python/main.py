@@ -386,7 +386,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionPen_Width.triggered.connect(self.change_pen_width)
         self.actionGitHub_Repository.triggered.connect(self.open_github)
         self.actionAbout.triggered.connect(self.about)
-        self.actionOpen_image.triggered.connect(self.open)
+        self.actionOpen_image.triggered.connect(self.open_image)
         self.actionClear_all.triggered.connect(self.clear_all)
         #endregion
 
@@ -815,7 +815,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QMessageBox.critical(self, "Export failed",
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
-    def open(self):
+    def open_image(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
         It will also ask the user if they want to clear the canvas on image load.'''
@@ -826,7 +826,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QtWidgets.QMessageBox.critical(self, "Couldn't load image",
                                      "This image appears to be an unsupported filetype and could not be loaded.",
                                      QtWidgets.QMessageBox.Ok)
-                self.open()
+                self.open_image()
             else:
                 if self.drawing_area.rects:
                     response = QtWidgets.QMessageBox.question(self, "Reset drawing area?",
