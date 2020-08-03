@@ -54,6 +54,7 @@
 import sys
 import webbrowser
 import json
+import csv
 #QImageWriter is currently unused but it's used for saving images
 #specifically, determining savable formats
 from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
@@ -64,6 +65,7 @@ from rectmap import Ui_MainWindow
 appctxt = ApplicationContext()
 prefpath = appctxt.get_resource('preferences.json')
 default_prefpath = appctxt.get_resource('default.json')
+csvpath = appctxt.get_resource('blank.csv')
 #endregion imports
 
 '''todo (vaguely in this order):
@@ -88,12 +90,14 @@ default_prefpath = appctxt.get_resource('default.json')
         click row (or row element) to highlight associated rectangle in some way
         right-click custom context menu
         toolbar (if needed)
-        make undo work to not just delete rectangles, but undo other actions (or drop entirely)
+        make undo work to not just delete rectangles, but undo other actions (or drop entirely) 
+        above -- probably done by setting an instance attribute in form of <action>,<additional_info>
         docstring standards conformity
         other pylint stuff (probably in a fork)
         unbreak the overlap system (which doesn't even work correctly in its current state)
         disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
         unbreak the draw system
+        unbreak the table system (use more and different signals)
 '''
 
 def get_prefs(source="user"):
@@ -569,6 +573,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #takes up to 40% cpu!! actual garbage
 
         #we rebuild the *entire* table on each call
+        #this also destroys any entered data in custom fields!!
         #self.table_widget.setRowCount(0)
         self.table_widget.clearContents()
         rectangles = self.drawing_area.rects
@@ -750,6 +755,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conversion_values['y2'] = float(self.conv_y2_edit.text())
         self.update_tables()
     def add_custom_field(self):
+        #add handling for blank responses...
         new_field_name, response = QtWidgets.QInputDialog.getText(self, "Add new custom field",
                                                   "Custom field name:")
         print(new_field_name, response)
@@ -759,13 +765,43 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #this is why we can't just get the horizontalHeaderItem and use setText()
         #because it doesn't exist lol
         self.table_widget.setHorizontalHeaderItem(self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(new_field_name))
+        #to prevent errors on export, each of the cells in the new column are initialized to an empty string (so as to avoid NoneType errors)
+        #maybe move this into the export functions themselves?
+        #or fix the bad table updating function lol
+        for row_number in range(0, self.table_widget.rowCount()):
+            self.table_widget.setItem(row_number, self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(""))
         #i tried
         #self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-1).setText(new_field_name)
         #print(self.table_widget.columnCount())
         #print(self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-2).text())
     def simple_csv_export(self):
+        #ask user for filepath here...
+        header_column = []
+        data = []
         for i in range(0, self.table_widget.columnCount()):
-            print(self.table_widget.horizontalHeaderItem(i).text())
+            header_column.append(self.table_widget.horizontalHeaderItem(i).text())
+        for row_number in range(0, self.table_widget.rowCount()):
+            try:
+                row_data = []
+                for column_number in range(0, self.table_widget.columnCount()):
+                    row_data.append(self.table_widget.item(row_number, column_number).text())
+                data.append(row_data)
+            except AttributeError:
+                print("bad data at %s, %s"%(row_number, column_number))
+                return None
+        #print(header_column)
+        #print(data)
+        #instead of passing csvpath, pass file_name from prompt
+        #if it doesn't already exist, Python will create a new file at that location
+        initialPath = QtCore.QDir.currentPath() + '/untitled.csv'
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
+                "CSV (Comma delimited) (*.csv);;All Files (*)")
+        if file_name:
+            with open(file_name, mode='w', newline='') as csv_file:
+                writer = csv.writer(csv_file)
+
+                writer.writerow(header_column)
+                writer.writerows(data)
     def open(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
