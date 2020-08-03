@@ -765,7 +765,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #it must explicitly be created, which is done below
         #this is why we can't just get the horizontalHeaderItem and use setText()
         #because it doesn't exist lol
-        self.table_widget.setHorizontalHeaderItem(self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(new_field_name))
+        if new_field_name == "":
+            self.table_widget.setHorizontalHeaderItem(self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(str(self.table_widget.columnCount())))
+        else:
+            self.table_widget.setHorizontalHeaderItem(self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(new_field_name))
         #to prevent errors on export, each of the cells in the new column are initialized to an empty string (so as to avoid NoneType errors)
         #maybe move this into the export functions themselves?
         #or fix the bad table updating function lol
@@ -820,6 +823,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def advanced_csv_export(self):
         self.export_window = AdvancedExportWindow()
         self.export_window.show()
+    def fstring_export(self):
+        pass
+    def new_fstring_window(self):
+        pass
     def open_image(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
