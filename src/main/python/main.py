@@ -388,7 +388,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 1: Coordinate Table
-
+        self.add_custom_button.clicked.connect(self.add_custom_field)
         #endregion
 
         #region Tab 2: Conversion
@@ -402,7 +402,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 3: Export Data
-
+        self.export_csv_button.clicked.connect(self.simple_csv_export)
         #endregion
 
         #region Tab 4: Settings
@@ -452,6 +452,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "x2":None,
             "y2":None
         }
+
+        self.custom_column_headers = []
         #endregion
 
         #region All other initialization
@@ -567,7 +569,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #takes up to 40% cpu!! actual garbage
 
         #we rebuild the *entire* table on each call
-        self.table_widget.setRowCount(0)
+        #self.table_widget.setRowCount(0)
+        self.table_widget.clearContents()
         rectangles = self.drawing_area.rects
 
         for row_number in range(0, len(rectangles)):
@@ -718,7 +721,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #print("rectangle validation was ok")
             #check if aspect ratio was preserved
             canvas_ratio = self.drawing_area.size().height()/self.drawing_area.size().width()
-            conv_ratio = (values[3]-values[1])/(values[2]-values[0])
+            try:
+                conv_ratio = (values[3]-values[1])/(values[2]-values[0])
+            except ZeroDivisionError:
+                conv_ratio = 0.0
             #chances are that nobody will ever have the exact same ratio as the canvas
             #but it's here anyways as a warning
             if canvas_ratio != conv_ratio:
@@ -743,7 +749,23 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conversion_values['x2'] = float(self.conv_x2_edit.text())
         self.conversion_values['y2'] = float(self.conv_y2_edit.text())
         self.update_tables()
-    #region Actions
+    def add_custom_field(self):
+        new_field_name, response = QtWidgets.QInputDialog.getText(self, "Add new custom field",
+                                                  "Custom field name:")
+        print(new_field_name, response)
+        self.table_widget.insertColumn(self.table_widget.columnCount())
+        #a horizontalHeaderItem *does not* exist after calling insertColumn
+        #it must explicitly be created, which is done below
+        #this is why we can't just get the horizontalHeaderItem and use setText()
+        #because it doesn't exist lol
+        self.table_widget.setHorizontalHeaderItem(self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(new_field_name))
+        #i tried
+        #self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-1).setText(new_field_name)
+        #print(self.table_widget.columnCount())
+        #print(self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-2).text())
+    def simple_csv_export(self):
+        for i in range(0, self.table_widget.columnCount()):
+            print(self.table_widget.horizontalHeaderItem(i).text())
     def open(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
@@ -801,7 +823,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def open_github(self):
         '''Opens this program's repo in the user's default browser.'''
         webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
-    #endregion
     def reset_prompt(self):
         '''Warns the user that they are about to reset the program's settings to their defaults.
         Returns `True` if "Reset" is selected.
