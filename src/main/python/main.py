@@ -417,6 +417,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.export_advanced_button.clicked.connect(self.advanced_csv_export)
         self.export_txt_button.clicked.connect(self.fstring_export)
         self.open_external_fstring.clicked.connect(self.new_fstring_window)
+        #technically this connects us to a signal not exclusive to just tab 3
+        #but i wasn't able to find a way to connect to only tab 3, as it's apparently
+        #a generic qwidget, not a qtabbar
+        self.tabWidget.tabBarClicked.connect(self.update_inline_valid_vars)
         #endregion
 
         #region Tab 4: Settings
@@ -880,9 +884,33 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         and handles all needed functionality.'''
         self.export_window = AdvancedExportWindow()
         self.export_window.show()
+    def get_fstring_vars(self):
+        '''Standalone function for getting the available variables for an
+        f-string export. Returns a list containing the valid column headers,
+        comma+space separated.'''
+        #Note: if custom identifiers are implemented, then convert this back to returning the string.
+        #Go "{x1}, {x2}, ..." instead of the current implementation w/out identifiers.
+        available_vars = []
+        for column_number in range(0, self.table_widget.columnCount()):
+            header_name = self.table_widget.horizontalHeaderItem(column_number).text()
+            available_vars.append(header_name)
+        if self.conversion_values['x1']:
+            for column_number in range(0, self.converted_table_widget.columnCount()):
+                header_name = self.converted_table_widget.horizontalHeaderItem(column_number).text()
+                available_vars.append(header_name)
+        #var_string = ', '.join([str(item) for item in available_vars])
+        #return var_string
+        return available_vars
+    def update_inline_valid_vars(self, index):
+        '''Update `vars_label` with the current valid column headers.\n
+        May be removed in the future, as this contains the sole call to `get_fstring_vars`
+        since `new_fstring_window` simply takes the current contents of this label.'''
+        if index == 2:
+            vars = ', '.join([str(item) for item in self.get_fstring_vars()])
+            self.vars_label.setText("Available variables: "+vars)
     def fstring_export(self):
         '''Using the data currently contained in the inline editor, interpret the data
-        as if it were a Python f-string for each rectangle row (newline separated). 
+        as if it were a Python f-string for each rectangle row (newline separated).
         Export the result to a .txt file specified by the user.'''
         #In reality, this function uses two identifying characters to replace variables.
         #An f-string-like format appeared to be the most natural way to ask the user where
@@ -954,12 +982,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #think there will ever be a need to worry about a string exceeding 1GB.
         #It wouldn't be too hard to turn this into a buffer and write each time it gets
         #too big or something, though.
-
-        #for updating the label:
-        #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
     def fstring_export_old(self):
         '''This was the old fstring_export function before it was reworked
-        to actually work (and avoid exec/eval in the process.
+        to actually work (and avoid exec/eval in the process).
         
         It is kept here for reference.'''
         #With regards to the potentialy security issue above, this is not much different from
@@ -1007,7 +1032,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def new_fstring_window(self):
         '''Open a new window composed of only a text editor and a button. This allows the
         user to more easily write an f-string if the inline editor is too small.'''
-        new_text = StringDialog.launch(self.fstring_edit.toPlainText(),"weee")
+        new_text = StringDialog.launch(self.fstring_edit.toPlainText(),self.vars_label.text())
         self.fstring_edit.setPlainText(new_text)
     def open_image(self):
         '''Handles opening an image.
@@ -1157,7 +1182,8 @@ class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
         self.ui = Ui_StringDialog()
         self.ui.setupUi(self)
         self.setWindowTitle("F-string Editor")
-        self.ui.done_button.clicked.connect(self.accept)
+        #i really like how qt designer didn't magically do this like it did last time
+        self.ui.done_button.clicked.connect(self.accept) 
     def getValues(self):
         return self.ui.fstring_edit.toPlainText()
     @staticmethod
