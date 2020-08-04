@@ -905,9 +905,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 available_vars.append(header_name)
                 full_dict["{"+header_name+"}"] = [column_number, self.table_widget]
         #print(full_dict)
-
         user_input = self.fstring_edit.toPlainText()
 
+        #this is what will end up being written to the file
         final = ""
         #again, we assume that both tables will have the same row count
         try:
@@ -925,9 +925,27 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                      "<p>If all else fails, you should consider exporting this "
                                      "data to a CSV file and working from there.</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
+            return None
 
-        print(final)
-            
+        initialPath = QtCore.QDir.currentPath() + '/untitled.txt'
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
+                "Plain Text (*.txt);;All Files (*)")
+        try:
+            if file_name:
+                with open(file_name, mode='w') as txt_file:
+                    txt_file.write(final)
+                    txt_file.close()
+                    QtWidgets.QMessageBox.information(self, "Export complete!",
+                                     '<p>Done. If the output appears wrong or you have leftover '
+                                     'column headers, check your formatting.</p>'
+                                     '<p>You may want to consider exporting to a CSV file instead '
+                                     'if the output continues to be incorrect.</p>',
+                                     QtWidgets.QMessageBox.Ok)
+        except Exception as e:
+            #again, no idea how to manually trigger this
+            QtWidgets.QMessageBox.critical(self, "Export failed",
+                                     "<p>Error:</p><p>%s</p>"%e,
+                                     QtWidgets.QMessageBox.Ok)
         #Rather than write to the output file many times on write-append mode,
         #I elected to just repeatedly append data to a single string.
         #Python strings can be rather large in size (depending on OS), and I don't
