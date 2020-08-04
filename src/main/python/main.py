@@ -62,6 +62,7 @@ from fbs_runtime.application_context.PyQt5 import ApplicationContext
 #------
 from rectmap import Ui_MainWindow
 from advexport import Ui_AdvExportWindow
+from fstringdialog import Ui_StringDialog
 #------
 appctxt = ApplicationContext()
 prefpath = appctxt.get_resource('preferences.json')
@@ -415,6 +416,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.export_csv_button.clicked.connect(self.simple_csv_export)
         self.export_advanced_button.clicked.connect(self.advanced_csv_export)
         self.export_txt_button.clicked.connect(self.fstring_export)
+        self.open_external_fstring.clicked.connect(self.new_fstring_window)
         #endregion
 
         #region Tab 4: Settings
@@ -955,7 +957,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #for updating the label:
         #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
-
     def fstring_export_old(self):
         '''This was the old fstring_export function before it was reworked
         to actually work (and avoid exec/eval in the process.
@@ -1006,7 +1007,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def new_fstring_window(self):
         '''Open a new window composed of only a text editor and a button. This allows the
         user to more easily write an f-string if the inline editor is too small.'''
-        pass
+        new_text = StringDialog.launch(self.fstring_edit.toPlainText(),"weee")
+        self.fstring_edit.setPlainText(new_text)
     def open_image(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
@@ -1141,6 +1143,32 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         self.ui = Ui_AdvExportWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("Advanced CSV Export")
+
+class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
+    '''Opens a new dialog for f-string editing. Also provides the user
+    with extra information on how f-strings work. Application modal.\n
+    Intended to be called with `StringDialog.launch()`, which requires
+    the parameters `current_text` - the text of the inline editor - and
+    `available_vars` - a list of the usable column names.'''
+    #see this link for returning values from a dialog as if it were a normal function
+    #https://stackoverflow.com/questions/37411750/pyqt-qdialog-return-response-yes-or-no
+    def __init__(self):
+        super().__init__()
+        self.ui = Ui_StringDialog()
+        self.ui.setupUi(self)
+        self.setWindowTitle("F-string Editor")
+        self.ui.done_button.clicked.connect(self.accept)
+    def getValues(self):
+        return self.ui.fstring_edit.toPlainText()
+    @staticmethod
+    def launch(current_text, available_vars):
+        dlg = StringDialog()
+        dlg.ui.fstring_edit.setPlainText(current_text)
+        dlg.ui.available_vars_label.setText(available_vars)
+        r = dlg.exec_()
+        if r:
+            return dlg.getValues()
+        return None
 
 class AppContext(ApplicationContext):
     '''fbs requires that one instance of ApplicationContext be instantiated.

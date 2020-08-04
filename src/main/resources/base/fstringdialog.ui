@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>StringDialog</class>
+ <widget class="QDialog" name="StringDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>801</width>
+    <height>495</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="label_29">
+     <property name="text">
+      <string>This allows you to generate custom text lines based on rectangle data. The formatting is similar to Python's f-string, in which an expression can be placed within {curly brackets} that will be formatted in the string literal.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>For example, if you want to generate the string &quot;Rectangle ... is located at ...&quot; for each rectangle, you might write &quot;Rectangle {row_number} has points at ({x1},{y1}) and ({x2},{y2}).</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>This is not what *actually* occurs internally, as implied by the ability to define custom variable identifiers.</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>If you need greater control or are more experienced, you are probably better off exporting all points to a CSV file and working from there (instead of using this functionality).</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>The context of the textbox below will be treated as if it were an f-string and will be executed for each rectangle, with results newline separated. The available values are defined by the columns in the coordinate table, and are shown below. Note that you must write the column names *exactly as they appear* for this to work.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="available_vars_label">
+     <property name="text">
+      <string>Available variables:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="fstring_edit">
+     <property name="font">
+      <font>
+       <family>Consolas</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="lineWrapMode">
+      <enum>QPlainTextEdit::NoWrap</enum>
+     </property>
+     <property name="plainText">
+      <string>if {x1_conv} &lt;= {x2_conv} and {y1_conv} &lt;= {y2_conv}:
+    pass</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="done_button">
+     <property name="text">
+      <string>Done</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

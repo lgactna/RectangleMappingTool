@@ -538,7 +538,7 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "Advanced export includes the ability to reorder, select, and preview the fields used when exporting. If you need custom or non-coordinate fields, you must use advanced export. This opens a new window."))
         self.export_advanced_button.setText(_translate("MainWindow", "Advanced export"))
         self.label_15.setText(_translate("MainWindow", "Export: f-string"))
-        self.label_16.setText(_translate("MainWindow", "The below will be passed directly through an eval() statement and will be executed for each rectangle, with results newline separated. The available values are defined by the columns in the coordinate table, and are shown below."))
+        self.label_16.setText(_translate("MainWindow", "Click \"Open f-string edit in new window\" for more information."))
         self.vars_label.setText(_translate("MainWindow", "Available variables: x1, y1, x2, y2, x1_conv, y1_conv, x2_conv, y2_conv, overlaps, color"))
         self.fstring_edit.setPlainText(_translate("MainWindow", "if {x1_conv} <= {x2_conv} and {y1_conv} <= {y2_conv}:\n"
 "    pass"))

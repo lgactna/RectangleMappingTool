@@ -399,7 +399,7 @@
         <item>
          <widget class="QLabel" name="label_16">
           <property name="text">
-           <string>The below will be passed directly through an eval() statement and will be executed for each rectangle, with results newline separated. The available values are defined by the columns in the coordinate table, and are shown below.</string>
+           <string>Click &quot;Open f-string edit in new window&quot; for more information.</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
