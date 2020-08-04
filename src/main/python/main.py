@@ -901,10 +901,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.export_window.show()
     def get_column_headers(self):
         '''Standalone function for getting the available variables for an
-        export. Returns a list containing the valid column headers,
-        comma+space separated.'''
-        #Note: if custom identifiers are implemented, then convert this back to returning the string.
-        #Go "{x1}, {x2}, ..." instead of the current implementation w/out identifiers.
+        export. Returns a list containing the (names of) valid column headers,
+        each element a `str` containing the name of the column header.\n
+        Note that this *does not* return the objects themselves.'''
         available_vars = []
         for column_number in range(0, self.table_widget.columnCount()):
             header_name = self.table_widget.horizontalHeaderItem(column_number).text()
@@ -917,9 +916,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #return var_string
         return available_vars
     def update_inline_valid_vars(self, index):
-        '''Update `vars_label` with the current valid column headers.\n
-        May be removed in the future, as this contains the sole call to `get_column_headers`
-        since `new_fstring_window` simply takes the current contents of this label.'''
+        '''Update `vars_label` with the current valid column headers based on
+        the value returned from `get_column_headers()`.'''
+        #Note: if custom identifiers are implemented, then an additional process must be
+        #made to surround each element.
+        #https://stackoverflow.com/questions/44471380/surround-strings-in-an-array-with-a-certain-character
+        #Go "{x1}, {x2}, ..." instead of the current implementation w/out identifiers.
         if index == 2:
             vars = ', '.join([str(item) for item in self.get_column_headers()])
             self.vars_label.setText("Available variables: "+vars)
