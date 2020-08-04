@@ -903,7 +903,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for column_number in range(0, self.converted_table_widget.columnCount()):
                 header_name = self.converted_table_widget.horizontalHeaderItem(column_number).text()
                 available_vars.append(header_name)
-                full_dict["{"+header_name+"}"] = [column_number, self.table_widget]
+                full_dict["{"+header_name+"}"] = [column_number, self.converted_table_widget]
         #print(full_dict)
         user_input = self.fstring_edit.toPlainText()
 
