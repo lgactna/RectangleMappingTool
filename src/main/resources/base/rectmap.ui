@@ -340,9 +340,16 @@
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="all_radio_button">
+           <widget class="QRadioButton" name="both_radio_button">
             <property name="text">
              <string>Both</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="all_radio_button">
+            <property name="text">
+             <string>All</string>
             </property>
            </widget>
           </item>

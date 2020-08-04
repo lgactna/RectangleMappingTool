@@ -79,8 +79,10 @@ default_prefpath = appctxt.get_resource('default.json')
         done - conversion table
         done - qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
         done - simple csv export
+        done - fstring export
+        "all" option on simple csv export
+        custom fstring identifiers
         advanced csv export (old: custom ordering of csv with qlistwidget)
-        fstring export
         edit table values and update accordingly
         custom fields
         disable "change color" button if disabled
@@ -91,7 +93,7 @@ default_prefpath = appctxt.get_resource('default.json')
         click row (or row element) to highlight associated rectangle in some way
         right-click custom context menu
         toolbar (if needed)
-        csv import
+        csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
         above -- probably done by setting an instance attribute in form of <action>,<additional_info>
         unbreak the overlap system (which doesn't even work correctly in its current state)
@@ -671,8 +673,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Since the color field is planned to say "Default" when using to the default pen color\n
         (as opposed to explicitly defining the rgba value), these "default-colored" rectangles
         should immediately reflect changes to the default pen color.'''
-        #calling draw_all_rects during initialization throws an error that the painter is not active
-        #(QPainter::setPen: Painter not active)
+        #calling draw_all_rects during initialization throws some errors
+        #QPainter::begin: Paint device returned engine == 0, type: 3
+        #QPainter::setPen: Painter not active
         #this seems to have no long-lasting effects so i won't implement a check to ensure
         #drawing_area exists before finishing update_all()
         self.drawing_area.draw_all_rects()
@@ -800,6 +803,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.selection_label.setText("Converted coordinates: Export the converted coordinates of the rectangles in the format x1_conv, y1_conv, x2_conv, y2_conv.")
         elif button.text() == "Both":
             self.selection_label.setText("Both: Export both raw and converted coordinates in the format x1, y1, x2, y2, x1_conv, y1_conv, x2_conv, y2_conv.")
+        elif button.text() == "All":
+            self.selection_label.setText("All: Export every valid field, including custom fields, color, and overlaps if enabled in the format raw coordinates, other fields, converted coordinates.")
     def simple_csv_export(self):
         '''Export coordinate and/or converted point data, based on radio button selection.
         If the user needs other fields or reordering, they will need to use the advanced
@@ -818,6 +823,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             mode = 2
         elif mode == "Both":
             mode = 3
+        elif mode == "All":
+            mode = 4
         #stop execution if there are no coordinate handles defined for an export that requires them
         if not self.conversion_values['x1'] and (mode == 2 or mode == 3):
             QtWidgets.QMessageBox.information(self, "Coordinate handles not defined",
@@ -829,7 +836,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if mode == 1 or mode == 3:
             for i in range(0, 4):
                 header_column.append(self.table_widget.horizontalHeaderItem(i).text())
-        if mode == 2 or mode == 3:
+        if mode == 4:
+            for i in range(0, self.table_widget.columnCount()):
+                header_column.append(self.table_widget.horizontalHeaderItem(i).text())
+        if (mode == 2 or mode == 3) or (mode == 4 and self.conversion_values['x1']):
             for i in range(0, 4):
                 header_column.append(self.converted_table_widget.horizontalHeaderItem(i).text())
         #we assume that both tables will have the same row count
@@ -841,7 +851,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     position = "raw"
                     for column_number in range(0, 4):
                         row_data.append(self.table_widget.item(row_number, column_number).text())
-                if mode == 2 or mode == 3:
+                if mode == 4:
+                    position = "raw"
+                    for column_number in range(0, self.table_widget.columnCount()):
+                        row_data.append(self.table_widget.item(row_number, column_number).text())
+                if (mode == 2 or mode == 3) or (mode == 4 and self.conversion_values['x1']):
                     position = "converted"
                     for column_number in range(0, 4):
                         row_data.append(self.converted_table_widget.item(row_number, column_number).text())
