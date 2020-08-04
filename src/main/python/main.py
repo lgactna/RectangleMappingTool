@@ -77,8 +77,8 @@ default_prefpath = appctxt.get_resource('default.json')
         done - try qdoublevalidator/qvalidator for the conversion handles
         done - conversion table
         done - qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
-        csv export
-        custom ordering of csv with qlistwidget
+        done - simple csv export
+        advanced csv export (old: custom ordering of csv with qlistwidget)
         fstring export
         edit table values and update accordingly
         custom fields
@@ -90,14 +90,15 @@ default_prefpath = appctxt.get_resource('default.json')
         click row (or row element) to highlight associated rectangle in some way
         right-click custom context menu
         toolbar (if needed)
-        make undo work to not just delete rectangles, but undo other actions (or drop entirely) 
+        csv import
+        make undo work to not just delete rectangles, but undo other actions (or drop entirely)
         above -- probably done by setting an instance attribute in form of <action>,<additional_info>
-        docstring standards conformity
-        other pylint stuff (probably in a fork)
         unbreak the overlap system (which doesn't even work correctly in its current state)
         disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
         unbreak the draw system
         unbreak the table system (use more and different signals)
+        docstring standards conformity
+        other pylint stuff (probably in a fork)
 '''
 
 def get_prefs(source="user"):
@@ -126,7 +127,6 @@ def write_prefs(data):
 
 class CanvasArea(QtWidgets.QWidget):
     '''The primary canvas on which the user draws rectangles.
-    
     Note that CanvasArea is referred to as "the canvas" across (most) docstrings and comments.'''
     #these are custom signals that will not work if placed in __init__
     #they must be class variables/attributes declared here
@@ -406,12 +406,15 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 3: Export Data
+        #create a radio group that makes figuring out these buttons' states easier
+        #note that there is no actual representation of them on-screen
         self.radio_group = QtWidgets.QButtonGroup()
         for radio_button in self.tab_3.findChildren(QtWidgets.QRadioButton):
             self.radio_group.addButton(radio_button)
         self.radio_group.buttonClicked.connect(self.update_csv_export_text)
         self.export_csv_button.clicked.connect(self.simple_csv_export)
         self.export_advanced_button.clicked.connect(self.advanced_csv_export)
+        self.export_txt_button.clicked.connect(self.fstring_export)
         #endregion
 
         #region Tab 4: Settings
@@ -799,7 +802,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         export data on either converted or both mode. Throw a message box as a result.'''
         header_column = []
         data = []
-        
         #get radio button state here and update the exports as necessary
         #then set the final mode to an int
         #i'm not sure if this is any more efficient than repeatedly checking strings
@@ -871,11 +873,121 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
     def advanced_csv_export(self):
+        '''Open the advanced CSV export window via an instance of `AdvancedExportWindow`.
+        There is no additional logic in this function since the window is application-modal
+        and handles all needed functionality.'''
         self.export_window = AdvancedExportWindow()
         self.export_window.show()
     def fstring_export(self):
-        pass
+        '''Using the data currently contained in the inline editor, interpret the data
+        as if it were a Python f-string for each rectangle row (newline separated). 
+        Export the result to a .txt file specified by the user.'''
+        #In reality, this function uses two identifying characters to replace variables.
+        #An f-string-like format appeared to be the most natural way to ask the user where
+        #to put column data.
+
+        #Currently unused, but with how this ended up, any arbitrary and unique identifer could do
+        #we can have the user define those in settings or something
+        #it's still basically an f-string though
+        #identifiers = ["{","}"]
+
+        #Get table headers.
+        #wrt to self.table ... these return memory addresses and thus is not terrible
+        available_vars = []
+        full_dict = {}
+        for column_number in range(0, self.table_widget.columnCount()):
+            header_name = self.table_widget.horizontalHeaderItem(column_number).text()
+            available_vars.append(header_name)
+            full_dict["{"+header_name+"}"] = [column_number, self.table_widget]
+        if self.conversion_values['x1']:
+            for column_number in range(0, self.converted_table_widget.columnCount()):
+                header_name = self.converted_table_widget.horizontalHeaderItem(column_number).text()
+                available_vars.append(header_name)
+                full_dict["{"+header_name+"}"] = [column_number, self.table_widget]
+        #print(full_dict)
+
+        user_input = self.fstring_edit.toPlainText()
+
+        final = ""
+        #again, we assume that both tables will have the same row count
+        try:
+            for row_number in range(0, self.table_widget.rowCount()):
+                temp = user_input
+                for i in full_dict:
+                    temp = temp.replace(i, full_dict[i][1].item(row_number, full_dict[i][0]).text())
+                final += temp+"\n"
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Export failed",
+                                     "<p>Error: %s</p>"
+                                     "<p>You may want to try defining a different identifier "
+                                     "or checking your formatting. Ensure there are no spaces "
+                                     "between your identifier and your column header names.</p>"
+                                     "<p>If all else fails, you should consider exporting this "
+                                     "data to a CSV file and working from there.</p>"%e,
+                                     QtWidgets.QMessageBox.Ok)
+
+        print(final)
+            
+        #Rather than write to the output file many times on write-append mode,
+        #I elected to just repeatedly append data to a single string.
+        #Python strings can be rather large in size (depending on OS), and I don't
+        #think there will ever be a need to worry about a string exceeding 1GB.
+        #It wouldn't be too hard to turn this into a buffer and write each time it gets
+        #too big or something, though.
+
+        #for updating the label:
+        #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
+
+    def fstring_export_old(self):
+        '''This was the old fstring_export function before it was reworked
+        to actually work (and avoid exec/eval in the process.
+        
+        It is kept here for reference.'''
+        #With regards to the potentialy security issue above, this is not much different from
+        #a user just having a standard Python interpreter available to them. Everything is local,
+        #so there's no fear of damaging an external system or something - it will stay as-is for now.
+
+        #Currently unused, but with how this ended up, any arbitrary and unique identifer will do and we can have the user define those
+        #it's still basically an f-string though
+        #identifiers = ["{","}"]
+
+        #Get table headers.
+        available_vars = []
+        full_dict = {}
+        for column_number in range(0, self.table_widget.columnCount()):
+            header_name = self.table_widget.horizontalHeaderItem(column_number).text()
+            available_vars.append(header_name)
+            full_dict["{"+header_name+"}"] = "self.table_widget.item({row_number}, %s).text()"%column_number
+        if self.conversion_values['x1']:
+            for column_number in range(0, self.converted_table_widget.columnCount()):
+                header_name = self.converted_table_widget.horizontalHeaderItem(column_number).text()
+                available_vars.append(header_name)
+                full_dict["{"+header_name+"}"] = "self.converted_table_widget.item({row_number}, %s).text()"%column_number
+        
+        #Convert the contents of the text box into a standard string that can actually be used by exec().
+        user_input = repr(self.fstring_edit.toPlainText())
+        #user_input = self.fstring_edit.toPlainText()
+        print(user_input)
+        for i in full_dict:
+            user_input = user_input.replace(i, full_dict[i])
+        f_string = user_input
+
+        #Actually perform exec() on each row.
+        #again, we assume that both tables will have the same row count
+        #and at this point we've converted _conv anyways if it exists
+        
+        final = ""
+        for row_number in range(0, self.table_widget.rowCount()):
+            #exec('final += f"%s"\n'%f_string, {"final":final, "row_number":row_number})
+            #print('final += f%s\n'%f_string)
+            print(eval('f"%s"'%f_string))
+        print(final)
+
+        #for updating the label:
+        #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
     def new_fstring_window(self):
+        '''Open a new window composed of only a text editor and a button. This allows the
+        user to more easily write an f-string if the inline editor is too small.'''
         pass
     def open_image(self):
         '''Handles opening an image.
