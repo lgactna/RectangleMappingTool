@@ -80,18 +80,19 @@ default_prefpath = appctxt.get_resource('default.json')
         done - qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
         done - simple csv export
         done - fstring export
-        "all" option on simple csv export
+        done - "all" option on simple csv export
         custom fstring identifiers
+        save image
         advanced csv export (old: custom ordering of csv with qlistwidget)
-        edit table values and update accordingly
-        custom fields
-        disable "change color" button if disabled
-        warn that custom colors will be discarded if colors are enabled and then disabled
         update coordinate table upper-left labels on draw finish
         highlight row on draw finish
         click row (or row element) to show rectangle info
         click row (or row element) to highlight associated rectangle in some way
         right-click custom context menu
+        edit table values and update accordingly
+        custom fields
+        disable "change color" button if disabled
+        warn that custom colors will be discarded if colors are enabled and then disabled
         toolbar (if needed)
         csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
@@ -898,9 +899,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         and handles all needed functionality.'''
         self.export_window = AdvancedExportWindow()
         self.export_window.show()
-    def get_fstring_vars(self):
+    def get_column_headers(self):
         '''Standalone function for getting the available variables for an
-        f-string export. Returns a list containing the valid column headers,
+        export. Returns a list containing the valid column headers,
         comma+space separated.'''
         #Note: if custom identifiers are implemented, then convert this back to returning the string.
         #Go "{x1}, {x2}, ..." instead of the current implementation w/out identifiers.
@@ -917,10 +918,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return available_vars
     def update_inline_valid_vars(self, index):
         '''Update `vars_label` with the current valid column headers.\n
-        May be removed in the future, as this contains the sole call to `get_fstring_vars`
+        May be removed in the future, as this contains the sole call to `get_column_headers`
         since `new_fstring_window` simply takes the current contents of this label.'''
         if index == 2:
-            vars = ', '.join([str(item) for item in self.get_fstring_vars()])
+            vars = ', '.join([str(item) for item in self.get_column_headers()])
             self.vars_label.setText("Available variables: "+vars)
     def fstring_export(self):
         '''Using the data currently contained in the inline editor, interpret the data
