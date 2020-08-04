@@ -897,7 +897,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''Open the advanced CSV export window via an instance of `AdvancedExportWindow`.
         There is no additional logic in this function since the window is application-modal
         and handles all needed functionality.'''
-        self.export_window = AdvancedExportWindow()
+        self.export_window = AdvancedExportWindow(self.get_column_headers())
         self.export_window.show()
     def get_column_headers(self):
         '''Standalone function for getting the available variables for an
@@ -1178,13 +1178,18 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
     '''Opens the advanced CSV export window, where the user is able to reorder and change
     what fields are exported. Includes a raw CSV preview as well as a table preview of
     the results.'''
-    def __init__(self):
+    def __init__(self, available_vars):
         super().__init__()
         #keep the user from messing with existing data without exiting
         self.setWindowModality(QtCore.Qt.ApplicationModal) 
-        self.ui = Ui_AdvExportWindow()
-        self.ui.setupUi(self)
+        self.setupUi(self)
         self.setWindowTitle("Advanced CSV Export")
+        for var in available_vars:
+            self.available_fields_list.addItem(var)
+        self.available_fields_list.itemClicked.connect(self.update_descriptions)
+        self.selected_fields_list.itemClicked.connect(self.update_descriptions)
+    def update_descriptions(self, list_item):
+        print(list_item.text())
 
 class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
     '''Opens a new dialog for f-string editing. Also provides the user
@@ -1196,18 +1201,18 @@ class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
     #https://stackoverflow.com/questions/37411750/pyqt-qdialog-return-response-yes-or-no
     def __init__(self):
         super().__init__()
-        self.ui = Ui_StringDialog()
-        self.ui.setupUi(self)
+        self.setupUi(self)
         self.setWindowTitle("F-string Editor")
         #i really like how qt designer didn't magically do this like it did last time
-        self.ui.done_button.clicked.connect(self.accept) 
+        self.done_button.clicked.connect(self.accept) 
     def getValues(self):
-        return self.ui.fstring_edit.toPlainText()
+        return self.fstring_edit.toPlainText()
     @staticmethod
     def launch(current_text, available_vars):
         dlg = StringDialog()
-        dlg.ui.fstring_edit.setPlainText(current_text)
-        dlg.ui.available_vars_label.setText(available_vars)
+        dlg.fstring_edit.setPlainText(current_text)
+        dlg.available_vars_label.setText(available_vars)
+        #prevent user from changing data without exiting dialog
         r = dlg.exec_()
         if r:
             return dlg.getValues()
