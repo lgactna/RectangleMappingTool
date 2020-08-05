@@ -55,8 +55,6 @@ import sys
 import webbrowser
 import json
 import csv
-#QImageWriter is currently unused but it's used for saving images
-#specifically, determining savable formats
 from PyQt5 import QtCore, QtGui, QtWidgets, QtPrintSupport
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 #------
@@ -393,6 +391,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionAbout.triggered.connect(self.about)
         self.actionOpen_image.triggered.connect(self.open_image)
         self.actionClear_all.triggered.connect(self.clear_all)
+        self.actionSave_image_as.triggered.connect(self.save_file)
         #endregion
 
         #region Tab 1: Coordinate Table
@@ -1083,6 +1082,31 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         self.update_all()
                 self.drawing_area.open_image(file_name)
                 #at this point, we should execute the resize logic
+    def save_file(self):
+        initialPath = QtCore.QDir.currentPath() + '/untitled'
+
+        #QImageWriter is used here for determining saveable file formats
+        #see https://doc.qt.io/qt-5/qimagewriter.html#supportedImageFormats
+
+        available_formats = ""
+
+        for file_format in QtGui.QImageWriter.supportedImageFormats():
+            #see https://stackoverflow.com/questions/57663191/how-to-convert-a-qbytearray-to-a-python-string-in-pyside2
+            format_extension = file_format.data().decode()
+            format_name = format_extension.upper()
+            available_formats += "%s (*.%s);;"%(format_name, format_extension)
+        available_formats += "All Files (*)"
+
+        file_name, selected_format = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
+                available_formats)
+        if file_name:
+            #selected_format returns the full string (%s (*.%s)), so we use the space to figure
+            #out what type it actually is
+            selected_format = selected_format.split(" ")[0] 
+            selected_format = selected_format.lower() #dunno if this makes a difference
+            return self.drawing_area.save_image(file_name, selected_format)
+
+        return False #return none??
     def undo(self):
         '''Tell the canvas to remove the most recent rectangle.
         Also updates the coordinate table.'''
@@ -1172,17 +1196,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             event.accept()
         else:
             event.ignore()
-'''
-    def saveFile(self, file_format):
-        initialPath = QtCore.QDir.currentPath() + '/untitled.' + file_format
-
-        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
-                "%s Files (*.%s);;All Files (*)" % (file_format.upper(), file_format))
-        if file_name:
-            return self.CanvasArea.save_image(file_name, file_format)
-
-        return False
-    '''
 
 class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
     '''Opens the advanced CSV export window, where the user is able to reorder and change
