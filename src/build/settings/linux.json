@@ -1,6 +1,6 @@
 {
-    "categories": "Utility;",
-    "description": "",
+    "categories": "Graphics;Development;",
+    "description": "A dedicated rectangle plotting and coordinate exporting tool.",
     "author_email": "",
-    "url": ""
+    "url": "https://github.com/aacttelemetry/RectangleMappingTool"
 }

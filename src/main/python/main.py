@@ -81,8 +81,8 @@ default_prefpath = appctxt.get_resource('default.json')
         done - "all" option on simple csv export
         done - advanced csv export (old: custom ordering of csv with qlistwidget)
         done - custom fields (but not the fact they get deleted, which is part of the table overhaul)
-        custom fstring identifiers
-        save image
+        done - custom fstring identifiers
+        done - save image
         update coordinate table upper-left labels on draw finish
         highlight row on draw finish
         click row (or row element) to show rectangle info
