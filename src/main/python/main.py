@@ -1189,16 +1189,19 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         self.available_fields_list.itemClicked.connect(self.update_descriptions)
         self.selected_fields_list.itemClicked.connect(self.update_descriptions)
         #for updating the previews
-        self.available_fields_list.itemChanged.connect(self.update_previews)
-        self.selected_fields_list.itemChanged.connect(self.update_previews)
+        #i could not for the life of me get this to work without implement a nonzero delay on update
+        #it worked perfectly fine adding elements
+        #then on removing elements this function would still think the removed element is there
+        #but executing this function at a brief point in time after the signal is emitted returns valid values
+        #i dont know why???
+        self.available_fields_list.itemChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.update_previews))
+        self.selected_fields_list.itemChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.update_previews))
 
         self.advanced_export_button.clicked.connect(self.export_values)
 
         #memory references to the actual tables
         self.main_table = main_table
         self.conv_table = conv_table
-
-        self.last_count = 0
 
         #somehow check for changes to the available_fields_list
         #basically reimplement the csv export system or smth
@@ -1252,25 +1255,13 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         #this returns an int
         #remove that int
         #^ok but this didn't work^
+        #seems findItems only works on elements inside the table, not headers
         
         self.sample_output_table.setColumnCount(0)
-        print(self.selected_fields_list.count())
-        if self.last_count == self.selected_fields_list.count():
-            #i could not for the life of me get this to work without implement a nonzero delay on update
-            #it worked perfectly fine adding elements
-            #then on removing elements this function would still think the removed element is there
-            #but redoing this function at a brief point in time after the signal is emitted returns valid values
-            #i dont know why???
-            #QtCore.QTimer.singleShot(100, self.update_previews(item))
-            QtCore.QTimer.singleShot(10, self.update_previews)
-            #header_text = item.text()
-            #print(self.sample_output_table.findItems(header_text, QtCore.Qt.MatchExactly))
-        else:
-            for i in range(0, self.selected_fields_list.count()):
-                self.sample_output_table.insertColumn(i)
-                item_text = self.selected_fields_list.item(i).text()
-                self.sample_output_table.setHorizontalHeaderItem(i, QtWidgets.QTableWidgetItem(item_text))
-            self.last_count = self.selected_fields_list.count()
+        for i in range(0, self.selected_fields_list.count()):
+            self.sample_output_table.insertColumn(i)
+            item_text = self.selected_fields_list.item(i).text()
+            self.sample_output_table.setHorizontalHeaderItem(i, QtWidgets.QTableWidgetItem(item_text))
         
         
 
