@@ -103,7 +103,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QTableView" name="sample_output_table"/>
+         <widget class="QTableWidget" name="sample_output_table"/>
         </item>
        </layout>
       </widget>

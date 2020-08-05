@@ -897,7 +897,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         '''Open the advanced CSV export window via an instance of `AdvancedExportWindow`.
         There is no additional logic in this function since the window is application-modal
         and handles all needed functionality.'''
-        self.export_window = AdvancedExportWindow(self.get_column_headers())
+        self.export_window = AdvancedExportWindow(self.get_column_headers(), self.table_widget, self.converted_table_widget)
         self.export_window.show()
     def get_column_headers(self):
         '''Standalone function for getting the available variables for an
@@ -1178,7 +1178,7 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
     '''Opens the advanced CSV export window, where the user is able to reorder and change
     what fields are exported. Includes a raw CSV preview as well as a table preview of
     the results.'''
-    def __init__(self, available_vars):
+    def __init__(self, available_vars, main_table, conv_table):
         super().__init__()
         #keep the user from messing with existing data without exiting
         self.setWindowModality(QtCore.Qt.ApplicationModal) 
@@ -1188,8 +1188,94 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             self.available_fields_list.addItem(var)
         self.available_fields_list.itemClicked.connect(self.update_descriptions)
         self.selected_fields_list.itemClicked.connect(self.update_descriptions)
+        #for updating the previews
+        self.available_fields_list.itemChanged.connect(self.update_previews)
+        self.selected_fields_list.itemChanged.connect(self.update_previews)
+
+        self.advanced_export_button.clicked.connect(self.export_values)
+
+        #memory references to the actual tables
+        self.main_table = main_table
+        self.conv_table = conv_table
+
+        self.last_count = 0
+
+        #somehow check for changes to the available_fields_list
+        #basically reimplement the csv export system or smth
+        #maybe draw on fstring for the variability
+        self.descriptions = {
+            'x1':'The x-coordinate of the top-left point of a rectangle.',
+            'y1':'The y-coordinate of the top-left point of a rectangle.',
+            'x2':'The x-coordinate of the bottom-right point of a rectangle.',
+            'y2':'The y-coordinate of the bottom-right point of a rectangle.',
+            'Overlaps with:':'The rectangles (listed by row number) that a rectangle overlaps with.',
+            'Color (r,g,b)':"This rectangle's border color, represented as an RGB value.",
+            'x1_conv':'The converted x-coordinate of the top-left point of a rectangle.',
+            'y1_conv':'The converted y-coordinate of the top-left point of a rectangle.',
+            'x2_conv':'The converted x-coordinate of the bottom-right point of a rectangle.',
+            'y2_conv':'The converted y-coordinate of the bottom-right point of a rectangle.',
+        }
     def update_descriptions(self, list_item):
-        print(list_item.text())
+        name = list_item.text()
+        if name in self.descriptions:
+            self.selected_field_label.setText(name)
+            self.selected_info_label.setText(self.descriptions[name])
+        else:
+            self.selected_field_label.setText(name)
+            self.selected_info_label.setText("Custom field.")
+    def export_values(self):
+        '''
+        for i in range(0, self.selected_fields_list.count()):
+            print(self.selected_fields_list.item(i).text()) #still need to be .text()'d
+        '''
+        #self.sample_output_table.clear()
+        self.sample_output_table.insertRow(0)
+    def update_previews(self):        
+        #i really don't know any other "easy" way to update this table
+        #we could add handlers for each possible event - moves, additions, removals - 
+        #but that's effort and too inflexible
+        #for this specific use case, i think destroying the entire table on each update
+        #is ok
+        #self.sample_output_table.clear()
+
+        #print(self.selected_fields_list.row(item))
+        #print(self.available_fields_list.row(item))
+
+        #print(item.text())
+
+        #the count is the same if an item is removed from the selected fields
+        #the count is *more* if an item is added
+
+        #therefore when an item is removed:
+        #get the item's text contents: item.text()
+        #find the header based on the text in the preview table
+        #this returns an int
+        #remove that int
+        #^ok but this didn't work^
+        
+        self.sample_output_table.setColumnCount(0)
+        print(self.selected_fields_list.count())
+        if self.last_count == self.selected_fields_list.count():
+            #i could not for the life of me get this to work without implement a nonzero delay on update
+            #it worked perfectly fine adding elements
+            #then on removing elements this function would still think the removed element is there
+            #but redoing this function at a brief point in time after the signal is emitted returns valid values
+            #i dont know why???
+            #QtCore.QTimer.singleShot(100, self.update_previews(item))
+            QtCore.QTimer.singleShot(10, self.update_previews)
+            #header_text = item.text()
+            #print(self.sample_output_table.findItems(header_text, QtCore.Qt.MatchExactly))
+        else:
+            for i in range(0, self.selected_fields_list.count()):
+                self.sample_output_table.insertColumn(i)
+                item_text = self.selected_fields_list.item(i).text()
+                self.sample_output_table.setHorizontalHeaderItem(i, QtWidgets.QTableWidgetItem(item_text))
+            self.last_count = self.selected_fields_list.count()
+        
+        
+
+
+        
 
 class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
     '''Opens a new dialog for f-string editing. Also provides the user
