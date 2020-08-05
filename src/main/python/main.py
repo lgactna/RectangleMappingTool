@@ -1229,7 +1229,7 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         else:
             self.selected_field_label.setText(name)
             self.selected_info_label.setText("Custom field.")
-    def export_values(self):
+    def calculate_data(self, is_preview):
         if self.available_vars[-1] == "y2_conv":
             main_table_vars = self.available_vars[:-4]
             conv_table_vars = self.available_vars[-4:]
@@ -1251,22 +1251,51 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
 
         data = []
 
+        if is_preview:
+            depth = min(5, self.main_table.rowCount())
+        else:
+            depth = self.main_table.rowCount()
         try:
-            for row_number in range(0, self.main_table.rowCount()):
+            if depth == 0:
+                raise ValueError
+            for row_number in range(0, depth):
                 row_data = []
                 for header in export_headers:
                     row_data.append(export_header_refs[header][0].item(row_number, export_header_refs[header][1]).text())
                 data.append(row_data)
-        except AttributeError:
-            #i seriously don't know what would trigger this normally
-            #other than the empty table case
-            QtWidgets.QMessageBox.critical(self, "Export failed",
-                                    "<p>Error: bad data at row %s, header %s</p>"
-                                    "<p>If you're seeing this error in a public release, "
-                                    "then either you have an empty table or something's gone terribly "
-                                    "wrong.</p>"%(row_number+1, header),
-                                    QtWidgets.QMessageBox.Ok)
+        except ValueError:
+            if is_preview:
+                #I could use the status bar here, but I thought that might not be as obvious since
+                #it's not used anywhere else and so the user wouldn't look to a status bar first
+                #for a program event.
+                self.sample_output_label.setText("Preview failed because you have no data!")
+                QtCore.QTimer.singleShot(3000, lambda: self.sample_output_label.setText("Sample output (up to 5 rects):"))
+            else:
+                QtWidgets.QMessageBox.critical(self, "Export failed",
+                                        "<p>Error: empty data</p>"
+                                        "<p>If you're seeing this error in a public release, "
+                                        "then you probably have an empty table.</p>",
+                                        QtWidgets.QMessageBox.Ok)
             return None
+        except Exception as e:
+            #i don't know how this could possibly ever be triggered
+            #because now the empty table case is explicitly accounted for
+            #but here it is anyways
+            if is_preview:
+                self.sample_output_label.setText("Preview failed: %s"%e)
+                QtCore.QTimer.singleShot(3000, lambda: self.sample_output_label.setText("Sample output (up to 5 rects):"))
+            else:
+                QtWidgets.QMessageBox.critical(self, "Export failed",
+                                        "<p>Error: bad data at row %s, header %s</p>"
+                                        "<p>%s</p>"%(row_number+1, header, e),
+                                        QtWidgets.QMessageBox.Ok)
+        return [export_headers, data]
+    def export_values(self):
+        data = self.calculate_data(False)
+
+        if not data:
+            return None
+
         #if it doesn't already exist, Python will create a new file at that location
         initialPath = QtCore.QDir.currentPath() + '/untitled.csv'
         file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
@@ -1276,8 +1305,8 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
                 with open(file_name, mode='w', newline='') as csv_file:
                     writer = csv.writer(csv_file)
 
-                    writer.writerow(export_headers)
-                    writer.writerows(data)
+                    writer.writerow(data[0])
+                    writer.writerows(data[1])
                     QtWidgets.QMessageBox.information(self, "Export complete",
                                         "CSV saved!",
                                         QtWidgets.QMessageBox.Ok)
@@ -1286,58 +1315,38 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             QtWidgets.QMessageBox.critical(self, "Export failed",
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
-
-
-        '''
-        for i in range(0, self.selected_fields_list.count()):
-            print(self.selected_fields_list.item(i).text()) #still need to be .text()'d
-        '''
-        '''
-        - generate a dictionary mapping column names to table and column number:
-        export_dict = {
-            "x1": [self.main_table, 0]
-            "y1": [self.main_table, 1]
-            ...
-        }
-        - get list of items in qlistwidget
-        export_headers = [1.text(), 2.text()]
-        - iterate over each:
-        for row_number in range(0, self.table_widget.rowCount()):
-            data = []
-            for element in export_headers:
-                data.append(export_dict[element][0].item(row_number, export_dict[element][1]))
-        '''
-
-        
     def update_previews(self):        
         #i really don't know any other "easy" way to update this table
         #we could add handlers for each possible event - moves, additions, removals - 
         #but that's effort and too inflexible
         #for this specific use case, i think destroying the entire table on each update
         #is ok
-        #self.sample_output_table.clear()
-
-        #print(self.selected_fields_list.row(item))
-        #print(self.available_fields_list.row(item))
-
-        #print(item.text())
-
-        #the count is the same if an item is removed from the selected fields
-        #the count is *more* if an item is added
-
-        #therefore when an item is removed:
-        #get the item's text contents: item.text()
-        #find the header based on the text in the preview table
-        #this returns an int
-        #remove that int
-        #^ok but this didn't work^
-        #seems findItems only works on elements inside the table, not headers
+        #self.sample_output_table.clear() #clear keeps the dimensions of the table so this won't work
         
+        #get preview data
+        data = self.calculate_data(True)
+
+        #don't try to update anything if preview data calculation fails
+        if not data:
+            return None
+        
+        #update the sample table
         self.sample_output_table.setColumnCount(0)
-        for i in range(0, self.selected_fields_list.count()):
-            self.sample_output_table.insertColumn(i)
-            item_text = self.selected_fields_list.item(i).text()
-            self.sample_output_table.setHorizontalHeaderItem(i, QtWidgets.QTableWidgetItem(item_text))
+        self.sample_output_table.setRowCount(0)
+        for header_index in range(0, len(data[0])):
+            self.sample_output_table.insertColumn(header_index)
+            self.sample_output_table.setHorizontalHeaderItem(header_index, QtWidgets.QTableWidgetItem(data[0][header_index]))
+        for row_number in range(0, len(data[1])):
+            self.sample_output_table.insertRow(row_number)
+            for column_number in range(0, len(data[0])):
+                self.sample_output_table.setItem(row_number, column_number, QtWidgets.QTableWidgetItem(data[1][row_number][column_number]))
+
+        #update raw
+        #this doesn't actually pass through a csv parser but it will spit out the same output
+        full = ','.join([str(item) for item in data[0]])+"\n"
+        for row in data[1]:
+            full += ','.join([str(item) for item in row])+"\n"
+        self.sample_output_raw.setPlainText(full)
         
 class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
     '''Opens a new dialog for f-string editing. Also provides the user

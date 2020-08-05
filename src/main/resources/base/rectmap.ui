@@ -47,7 +47,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -133,11 +133,6 @@
           <attribute name="horizontalHeaderDefaultSectionSize">
            <number>110</number>
           </attribute>
-          <row>
-           <property name="text">
-            <string>1</string>
-           </property>
-          </row>
           <column>
            <property name="text">
             <string>x1</string>
@@ -471,8 +466,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>449</width>
-             <height>801</height>
+             <width>361</width>
+             <height>859</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">

@@ -77,9 +77,7 @@ class Ui_MainWindow(object):
         self.table_widget.setMinimumSize(QtCore.QSize(0, 0))
         self.table_widget.setObjectName("table_widget")
         self.table_widget.setColumnCount(6)
-        self.table_widget.setRowCount(1)
-        item = QtWidgets.QTableWidgetItem()
-        self.table_widget.setVerticalHeaderItem(0, item)
+        self.table_widget.setRowCount(0)
         item = QtWidgets.QTableWidgetItem()
         self.table_widget.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -244,7 +242,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents_4 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_4.setGeometry(QtCore.QRect(0, 0, 449, 801))
+        self.scrollAreaWidgetContents_4.setGeometry(QtCore.QRect(0, 0, 361, 859))
         self.scrollAreaWidgetContents_4.setObjectName("scrollAreaWidgetContents_4")
         self.formLayout_2 = QtWidgets.QFormLayout(self.scrollAreaWidgetContents_4)
         self.formLayout_2.setObjectName("formLayout_2")
@@ -488,7 +486,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionUndo_toolbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -499,8 +497,6 @@ class Ui_MainWindow(object):
         self.current_overlaps_label.setText(_translate("MainWindow", "Overlaps with: 1, 2, 3"))
         self.delete_rect_button.setText(_translate("MainWindow", "Delete"))
         self.change_rect_color_button.setText(_translate("MainWindow", "Change color"))
-        item = self.table_widget.verticalHeaderItem(0)
-        item.setText(_translate("MainWindow", "1"))
         item = self.table_widget.horizontalHeaderItem(0)
         item.setText(_translate("MainWindow", "x1"))
         item = self.table_widget.horizontalHeaderItem(1)
