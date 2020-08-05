@@ -1206,9 +1206,8 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         self.main_table = main_table
         self.conv_table = conv_table
 
-        #somehow check for changes to the available_fields_list
-        #basically reimplement the csv export system or smth
-        #maybe draw on fstring for the variability
+        #possible descriptions of each standard field
+        #custom fields are defined as such in update_descriptions
         self.descriptions = {
             'x1':'The x-coordinate of the top-left point of a rectangle.',
             'y1':'The y-coordinate of the top-left point of a rectangle.',
@@ -1222,6 +1221,10 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             'y2_conv':'The converted y-coordinate of the bottom-right point of a rectangle.',
         }
     def update_descriptions(self, list_item):
+        '''Update the current item description and name based on the text of the list item
+        clicked. Called when a list item in either `QTableWidget` is clicked.\n
+        All descriptions are based on `self.descriptions` - custom fields will not be in
+        this dict, and thus will result in a description of "Custom field."'''
         name = list_item.text()
         if name in self.descriptions:
             self.selected_field_label.setText(name)
@@ -1230,6 +1233,13 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             self.selected_field_label.setText(name)
             self.selected_info_label.setText("Custom field.")
     def calculate_data(self, is_preview):
+        '''Calculate the export data in a manner very similar to the main window's
+        `simple_csv_export()`. However, this function adds `is_preview`, a `bool`
+        that determines whether or not to calculate data to up to 5 rows or all rows.\n
+        This is based on `self.selected_fields`, where the user will have already
+        defined the order and selection of the fields they'd like to use.'''
+        #determine if data from the conversion table is involved
+        #if so, split the available variables into two lists via slicing
         if self.available_vars[-1] == "y2_conv":
             main_table_vars = self.available_vars[:-4]
             conv_table_vars = self.available_vars[-4:]
@@ -1237,6 +1247,10 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             main_table_vars = self.available_vars
             conv_table_vars = []
 
+        #generate a dict where each column header is the key
+        #and a reference to their respective table and column index (0-indexed) is the value
+        #this will allow us to dynamically change what table we reference and what column to reference in that table
+        #based on what headers the user wants to export in `export_headers`
         export_header_refs = {}
         
         for i in range(0, len(main_table_vars)):
@@ -1244,23 +1258,28 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         for i in range(0, len(conv_table_vars)):
             export_header_refs[conv_table_vars[i]] = [self.conv_table, i]
 
+        #figure out what the user will actually export, and in what order
         export_headers = []
 
         for i in range(0, self.selected_fields_list.count()):
             export_headers.append(self.selected_fields_list.item(i).text())
 
         data = []
-
+        #depending on whether or not this is a preview, calculate data to up to 5 rows
+        #or all available rows
         if is_preview:
             depth = min(5, self.main_table.rowCount())
         else:
             depth = self.main_table.rowCount()
         try:
+            #get angry if the user tries to generate a preview or export data without actually having data
+            #not sure if ValueError is the correct one to use here
             if depth == 0:
                 raise ValueError
             for row_number in range(0, depth):
                 row_data = []
                 for header in export_headers:
+                    #append the text of <table reference>.item(row_number, <index of `header` in table reference>)
                     row_data.append(export_header_refs[header][0].item(row_number, export_header_refs[header][1]).text())
                 data.append(row_data)
         except ValueError:
@@ -1291,10 +1310,17 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
                                         QtWidgets.QMessageBox.Ok)
         return [export_headers, data]
     def export_values(self):
+        '''Prompt the user for a filepath and save the results of a non-preview
+        `self.calculate_data()` call to that CSV file, creating it if it does
+        not already exist. Called when the "Export to .csv" button is clicked.'''
         data = self.calculate_data(False)
 
         if not data:
             return None
+
+        #since this function effectively is the same as the end of simple_csv_export
+        #on the main window i *could* create an isolated function they both use and pass
+        #data into, but i would rather keep this separate and redundant for clarity
 
         #if it doesn't already exist, Python will create a new file at that location
         initialPath = QtCore.QDir.currentPath() + '/untitled.csv'
@@ -1315,7 +1341,10 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             QtWidgets.QMessageBox.critical(self, "Export failed",
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
-    def update_previews(self):        
+    def update_previews(self):
+        '''Update a table-based and text-based preview of the CSV data.
+        Called whenever the list items change (after a 10ms delay - see
+        comments above the related signal connections).'''
         #i really don't know any other "easy" way to update this table
         #we could add handlers for each possible event - moves, additions, removals - 
         #but that's effort and too inflexible
