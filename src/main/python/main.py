@@ -1199,7 +1199,10 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
 
         self.advanced_export_button.clicked.connect(self.export_values)
 
+        self.available_vars = available_vars
+
         #memory references to the actual tables
+        #used for getting the data
         self.main_table = main_table
         self.conv_table = conv_table
 
@@ -1227,12 +1230,85 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             self.selected_field_label.setText(name)
             self.selected_info_label.setText("Custom field.")
     def export_values(self):
+        if self.available_vars[-1] == "y2_conv":
+            main_table_vars = self.available_vars[:-4]
+            conv_table_vars = self.available_vars[-4:]
+        else:
+            main_table_vars = self.available_vars
+            conv_table_vars = []
+
+        export_header_refs = {}
+        
+        for i in range(0, len(main_table_vars)):
+            export_header_refs[main_table_vars[i]] = [self.main_table, i]
+        for i in range(0, len(conv_table_vars)):
+            export_header_refs[conv_table_vars[i]] = [self.conv_table, i]
+
+        export_headers = []
+
+        for i in range(0, self.selected_fields_list.count()):
+            export_headers.append(self.selected_fields_list.item(i).text())
+
+        data = []
+
+        try:
+            for row_number in range(0, self.main_table.rowCount()):
+                row_data = []
+                for header in export_headers:
+                    row_data.append(export_header_refs[header][0].item(row_number, export_header_refs[header][1]).text())
+                data.append(row_data)
+        except AttributeError:
+            #i seriously don't know what would trigger this normally
+            #other than the empty table case
+            QtWidgets.QMessageBox.critical(self, "Export failed",
+                                    "<p>Error: bad data at row %s, header %s</p>"
+                                    "<p>If you're seeing this error in a public release, "
+                                    "then either you have an empty table or something's gone terribly "
+                                    "wrong.</p>"%(row_number+1, header),
+                                    QtWidgets.QMessageBox.Ok)
+            return None
+        #if it doesn't already exist, Python will create a new file at that location
+        initialPath = QtCore.QDir.currentPath() + '/untitled.csv'
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save As", initialPath,
+                "CSV (Comma delimited) (*.csv);;All Files (*)")
+        try:
+            if file_name:
+                with open(file_name, mode='w', newline='') as csv_file:
+                    writer = csv.writer(csv_file)
+
+                    writer.writerow(export_headers)
+                    writer.writerows(data)
+                    QtWidgets.QMessageBox.information(self, "Export complete",
+                                        "CSV saved!",
+                                        QtWidgets.QMessageBox.Ok)
+        except Exception as e:
+            #i have no idea how to trigger this manually so uhh
+            QtWidgets.QMessageBox.critical(self, "Export failed",
+                                     "<p>Error:</p><p>%s</p>"%e,
+                                     QtWidgets.QMessageBox.Ok)
+
+
         '''
         for i in range(0, self.selected_fields_list.count()):
             print(self.selected_fields_list.item(i).text()) #still need to be .text()'d
         '''
-        #self.sample_output_table.clear()
-        self.sample_output_table.insertRow(0)
+        '''
+        - generate a dictionary mapping column names to table and column number:
+        export_dict = {
+            "x1": [self.main_table, 0]
+            "y1": [self.main_table, 1]
+            ...
+        }
+        - get list of items in qlistwidget
+        export_headers = [1.text(), 2.text()]
+        - iterate over each:
+        for row_number in range(0, self.table_widget.rowCount()):
+            data = []
+            for element in export_headers:
+                data.append(export_dict[element][0].item(row_number, export_dict[element][1]))
+        '''
+
+        
     def update_previews(self):        
         #i really don't know any other "easy" way to update this table
         #we could add handlers for each possible event - moves, additions, removals - 
@@ -1263,11 +1339,6 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             item_text = self.selected_fields_list.item(i).text()
             self.sample_output_table.setHorizontalHeaderItem(i, QtWidgets.QTableWidgetItem(item_text))
         
-        
-
-
-        
-
 class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
     '''Opens a new dialog for f-string editing. Also provides the user
     with extra information on how f-strings work. Application modal.\n
