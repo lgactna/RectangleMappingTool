@@ -207,11 +207,31 @@ class CanvasArea(QtWidgets.QWidget):
             self.loaded_image_size = image_size
 
     def save_image(self, file_name, file_format):
-        '''Save the image as the specified file name in the specified format.'''
+        '''Save the canvas as the specified file name in the specified format.
+        Also resize the final image based on the current canvas size - fixes
+        weird whitespace if a larger image was loaded before the current one.'''
         visible_image = self.image
-        self.resize_image(visible_image, self.size())
 
-        if visible_image.save(file_name, file_format):
+        print(self.size())
+        print(visible_image.size())
+
+        #the problem with using this function to resize image to the
+        #"correct" size - that is, the size of the canvas - is that
+        #the way i crop the image with setFixedSize() does make the canvas
+        #the correct size, but it doesn't actually change the size of the image element
+        #itself
+        #so when we load a large image in and then a smaller image, there
+        #would be a large amount of whitespace - using copy() allows us to fix this
+        #there are other curious implications of this, particularly wrt drawing
+        #rectangles "off-screen"; they're cropped as a result of the final image's
+        #size being dependent on the visible area
+        #self.resize_image(visible_image, self.size())
+
+        #https://stackoverflow.com/questions/7010611/how-can-i-crop-an-image-in-qt
+        final = visible_image.copy(0, 0, self.size().width(), self.size().height()) 
+
+        #if visible_image.save(file_name, file_format):
+        if final.save(file_name, file_format):
             return True
         else:
             return False
