@@ -15,5 +15,7 @@
         255
     ],
     "default_width": 1,
-    "conv_round": 6
+    "conv_round": 6,
+    "left_identifier": "{",
+    "right_identifier": "}"
 }

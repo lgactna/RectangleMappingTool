@@ -433,6 +433,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #fun fact: this validator seems to prevent blank values from emitting editingFinished
         self.conv_round_edit.setValidator(QtGui.QIntValidator())
         self.conv_round_edit.editingFinished.connect(lambda: self.change_preference("conv_round", int(self.conv_round_edit.text())))
+        self.left_identifier_edit.editingFinished.connect(lambda: self.change_preference("left_identifier", self.left_identifier_edit.text()))
+        self.right_identifier_edit.editingFinished.connect(lambda: self.change_preference("right_identifier", self.right_identifier_edit.text()))
 
         #im not sure if there's a better way to do this lol
         #pylint is fuming but my screen is wide enough so ill change it later
@@ -464,7 +466,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "show_color":False,
             "default_color":[0, 0, 255, 255],
             "default_width":1,
-            "conv_round":6
+            "conv_round":6,
+            "left_identifier":"{",
+            "right_identifier":"}"
         }
 
         self.conversion_values = {
@@ -563,6 +567,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.use_crosshair_checkbox.setChecked(self.settings['use_crosshair'])
         self.show_color_checkbox.setChecked(self.settings['show_color'])
         self.conv_round_edit.setText(str(self.settings['conv_round']))
+        self.left_identifier_edit.setText(self.settings['left_identifier'])
+        self.right_identifier_edit.setText(self.settings['right_identifier'])
 
         #also enabled/disabled logic
         if self.settings['active_table'] and self.settings['check_overlaps']:
@@ -918,14 +924,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def update_inline_valid_vars(self, index):
         '''Update `vars_label` with the current valid column headers based on
         the value returned from `get_column_headers()`.'''
-        #Note: if custom identifiers are implemented, then an additional process must be
-        #made to surround each element.
         #https://stackoverflow.com/questions/44471380/surround-strings-in-an-array-with-a-certain-character
-        #Go "{x1}, {x2}, ..." instead of the current implementation w/out identifiers.
+        #for surrounding each element
         if index == 2:
             #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
             #also used elsewhere in this program
-            vars = ', '.join([str(item) for item in self.get_column_headers()])
+            left_id = self.settings['left_identifier']
+            right_id = self.settings['right_identifier']
+            vars = ', '.join([str(left_id+item+right_id) for item in self.get_column_headers()])
             self.vars_label.setText("Available variables: "+vars)
     def fstring_export(self):
         '''Using the data currently contained in the inline editor, interpret the data
@@ -944,15 +950,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #wrt to self.table ... these return memory addresses and thus is not terrible
         available_vars = []
         full_dict = {}
+        left_id = self.settings['left_identifier']
+        right_id = self.settings['right_identifier']
         for column_number in range(0, self.table_widget.columnCount()):
             header_name = self.table_widget.horizontalHeaderItem(column_number).text()
             available_vars.append(header_name)
-            full_dict["{"+header_name+"}"] = [column_number, self.table_widget]
+            full_dict[left_id+header_name+right_id] = [column_number, self.table_widget]
         if self.conversion_values['x1']:
             for column_number in range(0, self.converted_table_widget.columnCount()):
                 header_name = self.converted_table_widget.horizontalHeaderItem(column_number).text()
                 available_vars.append(header_name)
-                full_dict["{"+header_name+"}"] = [column_number, self.converted_table_widget]
+                full_dict[left_id+header_name+right_id] = [column_number, self.converted_table_widget]
         #print(full_dict)
         user_input = self.fstring_edit.toPlainText()
 
