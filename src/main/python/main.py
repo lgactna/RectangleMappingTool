@@ -81,16 +81,16 @@ default_prefpath = appctxt.get_resource('default.json')
         done - simple csv export
         done - fstring export
         done - "all" option on simple csv export
+        done - advanced csv export (old: custom ordering of csv with qlistwidget)
+        done - custom fields (but not the fact they get deleted, which is part of the table overhaul)
         custom fstring identifiers
         save image
-        advanced csv export (old: custom ordering of csv with qlistwidget)
         update coordinate table upper-left labels on draw finish
         highlight row on draw finish
         click row (or row element) to show rectangle info
         click row (or row element) to highlight associated rectangle in some way
         right-click custom context menu
         edit table values and update accordingly
-        custom fields
         disable "change color" button if disabled
         warn that custom colors will be discarded if colors are enabled and then disabled
         toolbar (if needed)
@@ -923,6 +923,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #https://stackoverflow.com/questions/44471380/surround-strings-in-an-array-with-a-certain-character
         #Go "{x1}, {x2}, ..." instead of the current implementation w/out identifiers.
         if index == 2:
+            #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
+            #also used elsewhere in this program
             vars = ', '.join([str(item) for item in self.get_column_headers()])
             self.vars_label.setText("Available variables: "+vars)
     def fstring_export(self):
@@ -1308,6 +1310,7 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
                                         "<p>Error: bad data at row %s, header %s</p>"
                                         "<p>%s</p>"%(row_number+1, header, e),
                                         QtWidgets.QMessageBox.Ok)
+            return None
         return [export_headers, data]
     def export_values(self):
         '''Prompt the user for a filepath and save the results of a non-preview
