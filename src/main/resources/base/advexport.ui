@@ -42,7 +42,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Click on an item for more information.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click on an item for more information.&lt;/p&gt;&lt;p&gt;Note that you can copy fields by dragging fields with left-click held down. (But then you can't delete them, so you'll have to move them out of the &amp;quot;selected fields&amp;quot; column or reopen this window.)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -121,11 +121,7 @@
            </font>
           </property>
           <property name="plainText">
-           <string>x1,y1,33
-sdfsdfsdfsdf
-sdf
-dfs
-df</string>
+           <string/>
           </property>
          </widget>
         </item>

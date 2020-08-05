@@ -75,6 +75,7 @@ class Ui_AdvExportWindow(object):
         font.setFamily("Consolas")
         font.setPointSize(10)
         self.sample_output_raw.setFont(font)
+        self.sample_output_raw.setPlainText("")
         self.sample_output_raw.setObjectName("sample_output_raw")
         self.verticalLayout_2.addWidget(self.sample_output_raw)
         self.tabWidget.addTab(self.tab_2, "")
@@ -104,16 +105,11 @@ class Ui_AdvExportWindow(object):
         _translate = QtCore.QCoreApplication.translate
         AdvExportWindow.setWindowTitle(_translate("AdvExportWindow", "MainWindow"))
         self.selected_field_label.setText(_translate("AdvExportWindow", "-----"))
-        self.selected_info_label.setText(_translate("AdvExportWindow", "Click on an item for more information."))
+        self.selected_info_label.setText(_translate("AdvExportWindow", "<html><head/><body><p>Click on an item for more information.</p><p>Note that you can copy fields by dragging fields with left-click held down. (But then you can\'t delete them, so you\'ll have to move them out of the &quot;selected fields&quot; column or reopen this window.)</p></body></html>"))
         self.label_4.setText(_translate("AdvExportWindow", "Field information"))
         self.sample_output_label.setText(_translate("AdvExportWindow", "Sample output (up to 5 rects):"))
         self.label_2.setText(_translate("AdvExportWindow", "Available fields/columns"))
         self.label.setText(_translate("AdvExportWindow", "Selected fields/columns"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("AdvExportWindow", "Table"))
-        self.sample_output_raw.setPlainText(_translate("AdvExportWindow", "x1,y1,33\n"
-"sdfsdfsdfsdf\n"
-"sdf\n"
-"dfs\n"
-"df"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("AdvExportWindow", "Raw"))
         self.advanced_export_button.setText(_translate("AdvExportWindow", "Export to .csv"))
