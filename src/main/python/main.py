@@ -416,6 +416,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #region Tab 1: Coordinate Table
         self.add_custom_button.clicked.connect(self.add_custom_field)
+        #below is set in the ui file already
+        #self.table_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.table_widget.customContextMenuRequested.connect(self.show_table_menu)
         #endregion
 
         #region Tab 2: Conversion
@@ -820,6 +823,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-1).setText(new_field_name)
         #print(self.table_widget.columnCount())
         #print(self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-2).text())
+    def show_table_menu(self, pos):
+        #https://stackoverflow.com/questions/36614635/pyqt-right-click-menu-for-qcombobox
+        menu = QtWidgets.QMenu()
+        test_action = menu.addAction("Selection", lambda: print("a"))
+        #https://doc.qt.io/qt-5/qwidget.html#mapToGlobal
+        #exec is necessary to show this menu
+        #mapToGlobal will determine where it should go
+        #it will translate the widget coordinate pos to the global position
+        #so that the menu is placed correctly relative to the mouse;
+        #"where is <pos>'s position in table_widget relative to the global screen?"
+        action = menu.exec_(self.table_widget.mapToGlobal(pos))
     def update_csv_export_text(self, button):
         '''Called when a button in self.radio_group is clicked, passing in the clicked button
         `button`. Based on this button's text, update the description label below the radio buttons.'''

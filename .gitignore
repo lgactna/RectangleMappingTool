@@ -9,3 +9,4 @@ src/main/python/__pycache__
 untitled.csv
 untitled.txt
 untitled.png
+src/main/python/*.pyo

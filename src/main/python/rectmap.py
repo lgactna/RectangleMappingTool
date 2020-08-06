@@ -75,6 +75,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.table_widget.sizePolicy().hasHeightForWidth())
         self.table_widget.setSizePolicy(sizePolicy)
         self.table_widget.setMinimumSize(QtCore.QSize(0, 0))
+        self.table_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.table_widget.setObjectName("table_widget")
         self.table_widget.setColumnCount(6)
         self.table_widget.setRowCount(0)
@@ -505,7 +506,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionUndo_toolbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(3)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

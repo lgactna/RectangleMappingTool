@@ -47,7 +47,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -129,6 +129,9 @@
             <width>0</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
           </property>
           <attribute name="horizontalHeaderDefaultSectionSize">
            <number>110</number>
