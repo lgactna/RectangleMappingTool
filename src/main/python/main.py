@@ -8,7 +8,7 @@
 ## Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
 ## All rights reserved.
 ##
-## This file is part of the examples of Qt.
+## This file is part of the examples of PyQt.
 ##
 ## $QT_BEGIN_LICENSE:BSD$
 ## You may use this file under the terms of the BSD license as follows:
