@@ -1,6 +1,6 @@
 {
     "active_redraw": true,
-    "active_table": false,
+    "active_table": true,
     "active_overlaps": false,
     "check_overlaps": true,
     "crop_image": false,

@@ -157,7 +157,7 @@ class CanvasArea(QtWidgets.QWidget):
     sizeChanged = QtCore.pyqtSignal()
     #will be used later
     rectangleStarted = QtCore.pyqtSignal()
-    rectangleUpdated = QtCore.pyqtSignal()
+    rectangleUpdated = QtCore.pyqtSignal(QtCore.QRect)
     rectangleFinished = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         super(CanvasArea, self).__init__(parent)
@@ -287,7 +287,7 @@ class CanvasArea(QtWidgets.QWidget):
                 self.rects.append([QtCore.QRect(self.starting_point, event.pos()), "Default"])
                 self.draw_all_rects()
                 if self.settings['active_table']:
-                    self.dataChanged.emit() #this is used for "real-time" table updates
+                    self.rectangleUpdated.emit(self.rects[-1][0])
                 del self.rects[-1]
 
     def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
@@ -431,6 +431,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.dataChanged.connect(self.update_tables)
         self.drawing_area.posChanged.connect(self.update_coords)
         self.drawing_area.sizeChanged.connect(self.update_size_text)
+        self.drawing_area.rectangleUpdated.connect(self.update_rect_labels_active)
         #endregion
 
         #region Action signals and slots
@@ -891,11 +892,35 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #print(item.row(), item.column())
             if item.row() not in selected_rows:
                 selected_rows.append(item.row())
-        print(selected_rows)
+        return selected_rows
     def delete_rows(self, rows):
         pass
+    def update_rect_labels_active(self, temp_rect):
+        coords = temp_rect.getCoords()
+        number = self.table_widget.rowCount() + 1
+        self.current_selected_label.setText("Currently drawing rectangle %s"%number)
+        self.current_coordinates_label.setText(f"Coordinates: {coords[0]}, {coords[1]}, {coords[2]}, {coords[3]}")
+        self.current_overlaps_label.setText("eeeeeeee")
     def update_rect_labels(self):
-        pass
+        selected = self.get_selected_rows()
+        if len(selected) == 0:
+            self.current_selected_label.setText("No rectangles selected")
+            self.current_coordinates_label.clear()
+            self.current_overlaps_label.clear()
+        elif len(selected) == 1:
+            coords = self.drawing_area.rects[selected[0]][0].getCoords()
+            self.current_selected_label.setText("Rectangle %s selected"%(selected[0]+1))
+            self.current_coordinates_label.setText(f"Coordinates: {coords[0]}, {coords[1]}, {coords[2]}, {coords[3]}")
+            #probably set a conditional here...
+            self.current_overlaps_label.setText("eeeeeeee")
+        else:
+            #multiple selected
+            for i in range(0, len(selected)):
+                selected[i] += 1
+            rects = ', '.join([str(rect_no) for rect_no in selected])
+            self.current_selected_label.setText("Rectangles %s selected"%(rects))
+            self.current_coordinates_label.clear()
+            self.current_overlaps_label.clear()
     def update_csv_export_text(self, button):
         '''Called when a button in self.radio_group is clicked, passing in the clicked button
         `button`. Based on this button's text, update the description label below the radio buttons.'''
