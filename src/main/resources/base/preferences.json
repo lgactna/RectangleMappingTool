@@ -9,13 +9,14 @@
     "use_crosshair": true,
     "show_color": false,
     "default_color": [
-        0,
-        0,
-        255,
+        170,
+        170,
+        127,
         255
     ],
     "default_width": 1,
     "conv_round": 6,
     "left_identifier": "{",
-    "right_identifier": "}"
+    "right_identifier": "}",
+    "max_undo_actions": 25
 }

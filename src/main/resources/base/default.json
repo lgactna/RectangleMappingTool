@@ -17,5 +17,6 @@
     "default_width": 1,
     "conv_round": 6,
     "left_identifier": "{",
-    "right_identifier": "}"
+    "right_identifier": "}",
+    "max_undo_actions": 25
 }

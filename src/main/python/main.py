@@ -115,6 +115,8 @@ change-individual-color | [uhh...]
 draw-rectangle | rectangle_index (or none, since "delete last" is implied)
 change-conversion-handles | [x1,y1,x2,y2]
 
+change "rectangle object" to be an array of [rect_object, qcolor]?
+
 push each one of these to an array of n max length
 also make a setting of such
 don't add a preference change of the undo array length to the array itself
@@ -153,6 +155,10 @@ class CanvasArea(QtWidgets.QWidget):
     dataChanged = QtCore.pyqtSignal()
     posChanged = QtCore.pyqtSignal(int, int)
     sizeChanged = QtCore.pyqtSignal()
+    #will be used later
+    rectangleStarted = QtCore.pyqtSignal()
+    rectangleUpdated = QtCore.pyqtSignal()
+    rectangleFinished = QtCore.pyqtSignal()
     def __init__(self, parent=None):
         super(CanvasArea, self).__init__(parent)
 
@@ -167,6 +173,7 @@ class CanvasArea(QtWidgets.QWidget):
         self.rects = []
         self.loaded_image_path = None
         self.loaded_image_size = None
+        self.current_color = QtGui.QColor(0, 0, 255, 255)
 
         #A QtWidgets.QWidget normally only receives mouse move events (mouseMoveEvent) when a mouse button is being pressed.
         #This sets it to always receive mouse events, regardless.
@@ -277,7 +284,7 @@ class CanvasArea(QtWidgets.QWidget):
         self.posChanged.emit(event.pos().x(), event.pos().y())
         if (event.buttons() & QtCore.Qt.LeftButton) and self.scribbling:
             if self.settings['active_redraw']:
-                self.rects.append(QtCore.QRect(self.starting_point, event.pos()))
+                self.rects.append([QtCore.QRect(self.starting_point, event.pos()), "Default"])
                 self.draw_all_rects()
                 if self.settings['active_table']:
                     self.dataChanged.emit() #this is used for "real-time" table updates
@@ -287,7 +294,7 @@ class CanvasArea(QtWidgets.QWidget):
         if event.button() == QtCore.Qt.LeftButton and self.scribbling:
             self.end_point = event.pos()
             self.scribbling = False
-            self.rects.append(QtCore.QRect(self.starting_point, self.end_point))
+            self.rects.append([QtCore.QRect(self.starting_point, self.end_point), "Default"])
             #here we should also add this data to the table and update it
             self.dataChanged.emit() #this says that the rectangle data has changed
             self.draw_all_rects()
@@ -320,8 +327,7 @@ class CanvasArea(QtWidgets.QWidget):
         '''
         self.clear_image()
         painter = QtGui.QPainter(self.image)
-        painter.setPen(QtGui.QPen(self.settings['default_color'], self.settings['default_width'], QtCore.Qt.SolidLine,
-                            QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+
         #at this point we can redraw the image
         if self.loaded_image_path:
             bg_img = QtGui.QPixmap(self.loaded_image_path)
@@ -332,7 +338,13 @@ class CanvasArea(QtWidgets.QWidget):
         #drawing area has no border so use of frameGeometry should not be necessary?
         #painter.drawPixmap(QtCore.QRect(0,0,self.frameGeometry().width(),self.frameGeometry().height()),bg_img)
         for rect in self.rects:
-            painter.drawRect(rect)
+            if rect[1] == "Default" and self.current_color != self.settings['default_color']:
+                self.current_color = self.settings['default_color']
+            elif rect[1] != "Default" and self.current_color != rect[1]:
+                self.current_color = rect[1]
+            painter.setPen(QtGui.QPen(self.current_color, self.settings['default_width'], QtCore.Qt.SolidLine,
+                            QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+            painter.drawRect(rect[0])
         self.update()
 
     def resize_image(self, image, new_size):
@@ -512,7 +524,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "default_width":1,
             "conv_round":6,
             "left_identifier":"{",
-            "right_identifier":"}"
+            "right_identifier":"}",
+            "max_undo_actions": 25
         }
 
         self.conversion_values = {
@@ -523,6 +536,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         }
 
         self.custom_column_headers = []
+        self.undo_queue = []
         #endregion
 
         #region All other initialization
@@ -552,6 +566,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #rewrite as dict later?
         if preference in self.drawing_area.settings:
+            if preference == "default_color":
+                #unpack the list if it's changing the color
+                #don't know how this was missed before lol
+                value = QtGui.QColor(*value)
             self.drawing_area.settings[preference] = value
         if preference == "use_crosshair":
             if value:
@@ -646,7 +664,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         rectangles = self.drawing_area.rects
 
         for row_number in range(0, len(rectangles)):
-            coords = rectangles[row_number].getCoords()
+            coords = rectangles[row_number][0].getCoords()
             #print("adding row %s" % str(int(row_number)+1))
             self.table_widget.setRowCount(row_number+1)
             self.table_widget.setItem(row_number, 0, QtWidgets.QTableWidgetItem(str(coords[0])))
@@ -654,7 +672,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.table_widget.setItem(row_number, 2, QtWidgets.QTableWidgetItem(str(coords[2])))
             self.table_widget.setItem(row_number, 3, QtWidgets.QTableWidgetItem(str(coords[3]))) #row, column, QtWidgets.QTableWidgetItem; zero-indexed
             self.table_widget.setItem(row_number, 4, QtWidgets.QTableWidgetItem(""))
-            self.table_widget.setItem(row_number, 5, QtWidgets.QTableWidgetItem(""))#we can add the color property later
+            color = rectangles[row_number][1]
+            if rectangles[row_number][1] != 'Default':
+                rgba = list(color.getRgb())
+                color = ','.join([str(component) for component in rgba])
+            self.table_widget.setItem(row_number, 5, QtWidgets.QTableWidgetItem(color))#we can add the color property later
             self.table_widget.selectRow(row_number)
 
         #we can perform brute-force checking with QtCore.QRect.intersects(<QtCore.QRect2>)
@@ -669,7 +691,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.table_widget.setItem(row_number, 4, QtWidgets.QTableWidgetItem(""))
             for rect1_index in range(0, len(rectangles)):
                 for rect2_index in range(rect1_index+1, len(rectangles)):
-                    intersects = rectangles[rect1_index].intersects(rectangles[rect2_index])
+                    intersects = rectangles[rect1_index][0].intersects(rectangles[rect2_index][0])
                     #print(rectangles[rect1_index].intersects(rectangles[rect2_index]))
                     #print(f"Rectangle {rect1_index} overlaps with {rect2_index}?"+str(intersects))
                     current = self.table_widget.item(rect1_index, 4).text()
@@ -689,6 +711,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                                       QtWidgets.QTableWidgetItem(current+","+str(rect1_index+1)))
         #i seriously doubt there's any need to have a live conversion of this table
         #will fix later
+        #put in whatever gets connected to RectangleFinished
         self.converted_table_widget.setRowCount(0)
         if self.conversion_values['x1'] != None:
             #define line segment lengths
@@ -699,7 +722,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             places = self.settings['conv_round']
 
             for row_number in range(0, len(rectangles)):
-                coords = rectangles[row_number].getCoords()
+                coords = rectangles[row_number][0].getCoords()
                 #figure out what ratio of the whole each handle is
                 x1_ratio = coords[0]/canvas_width
                 y1_ratio = coords[1]/canvas_height
@@ -857,7 +880,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #so that the menu is placed correctly relative to the mouse;
         #"where is <pos>'s position in table_widget relative to the global screen?"
         action = menu.exec_(self.table_widget.mapToGlobal(pos))
-    def update_rect_labels(self):
+    def get_selected_rows(self):
         #return selected rows
         #maybe make this independent...?
         #https://stackoverflow.com/questions/5927499/how-to-get-selected-rows-in-qtableview
@@ -869,6 +892,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if item.row() not in selected_rows:
                 selected_rows.append(item.row())
         print(selected_rows)
+    def delete_rows(self, rows):
+        pass
+    def update_rect_labels(self):
+        pass
     def update_csv_export_text(self, button):
         '''Called when a button in self.radio_group is clicked, passing in the clicked button
         `button`. Based on this button's text, update the description label below the radio buttons.'''
@@ -1129,6 +1156,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         user to more easily write an f-string if the inline editor is too small.'''
         new_text = StringDialog.launch(self.fstring_edit.toPlainText(),self.vars_label.text())
         self.fstring_edit.setPlainText(new_text)
+    def undo_new(self, action):
+        pass
     def open_image(self):
         '''Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
