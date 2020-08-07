@@ -436,7 +436,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #region Action signals and slots
         self.actionUndo.triggered.connect(self.undo)
-        self.actionPen_Color.triggered.connect(self.change_pen_color)
+        self.actionPen_Color.triggered.connect(self.change_default_pen_color)
         self.actionPen_Width.triggered.connect(self.change_pen_width)
         self.actionGitHub_Repository.triggered.connect(self.open_github)
         self.actionAbout.triggered.connect(self.about)
@@ -453,7 +453,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #much like in the advanced export window, this signal seems to be emitted *before*
         #the selection is registered to have changed
         #so we do the 10 ms thing again, which makes me suspicious i'm doing something wrong
+        #probably the order in which things are processed
         self.table_widget.currentCellChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.update_rect_labels))
+        self.change_rect_color_button.clicked.connect(self.change_rectangle_color)
         #endregion
 
         #region Tab 2: Conversion
@@ -484,7 +486,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 4: Settings
-        self.set_color_button.clicked.connect(self.change_pen_color)
+        self.set_color_button.clicked.connect(self.change_default_pen_color)
         self.set_width_button.clicked.connect(self.change_pen_width)
         self.reset_settings_button.clicked.connect(self.reset_prefs)
         #fun fact: this validator seems to prevent blank values from emitting editingFinished
@@ -676,6 +678,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             color = rectangles[row_number][1]
             if rectangles[row_number][1] != 'Default':
                 rgba = list(color.getRgb())
+                del rgba[-1]
                 color = ','.join([str(component) for component in rgba])
             self.table_widget.setItem(row_number, 5, QtWidgets.QTableWidgetItem(color))#we can add the color property later
             self.table_widget.selectRow(row_number)
@@ -903,10 +906,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.current_overlaps_label.setText("eeeeeeee")
     def update_rect_labels(self):
         selected = self.get_selected_rows()
+        self.delete_rect_button.setEnabled(True)
+        self.change_rect_color_button.setEnabled(True)
         if len(selected) == 0:
             self.current_selected_label.setText("No rectangles selected")
             self.current_coordinates_label.clear()
             self.current_overlaps_label.clear()
+            self.delete_rect_button.setEnabled(False)
+            self.change_rect_color_button.setEnabled(False)
         elif len(selected) == 1:
             coords = self.drawing_area.rects[selected[0]][0].getCoords()
             self.current_selected_label.setText("Rectangle %s selected"%(selected[0]+1))
@@ -1236,12 +1243,20 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.undo_last()
         #delete most recent table entry on undo
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
-    def change_pen_color(self):
+    def change_default_pen_color(self):
         '''Open a dialog allowing the user to change the default rectangle color.'''
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         if new_color.isValid():
             self.drawing_area.set_pen_color(new_color)
             self.change_preference('default_color', list(new_color.getRgb()))
+            self.update_all()
+    def change_rectangle_color(self):
+        rows = self.get_selected_rows()
+        new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
+        print(new_color)
+        if new_color.isValid():
+            for rect_index in rows:
+                self.drawing_area.rects[rect_index][1] = new_color
             self.update_all()
     def change_pen_width(self):
         '''Open a dialog allowing the user to change the default rectangle width.'''
