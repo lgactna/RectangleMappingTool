@@ -103,6 +103,24 @@ default_prefpath = appctxt.get_resource('default.json')
         other pylint stuff (probably in a fork)
 '''
 
+'''undo actions: (format: action | [old_data])
+*note: fstring edit has its own undo handler, and will undo independently
+of a ctrl+z so long as the user is focused on that input box
+change-preference | [preference, value]
+change-table-data | [[row, column], value]
+add-custom-field | [field_name, column]
+delete-rectangle | [rectangle_object, <index in drawing_area.rects>]
+open-image | [old_filepath]
+change-individual-color | [uhh...]
+draw-rectangle | rectangle_index (or none, since "delete last" is implied)
+change-conversion-handles | [x1,y1,x2,y2]
+
+push each one of these to an array of n max length
+also make a setting of such
+don't add a preference change of the undo array length to the array itself
+so we can just avoid the issues that are associated with that lol
+'''
+
 def get_prefs(source="user"):
     '''Get `data` from either preferences.json or default.json.
     `source` is a `str`, either `"user"` or `"default"`. The default is `"user"`.\n
@@ -419,6 +437,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #below is set in the ui file already
         #self.table_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.table_widget.customContextMenuRequested.connect(self.show_table_menu)
+        #much like in the advanced export window, this signal seems to be emitted *before*
+        #the selection is registered to have changed
+        #so we do the 10 ms thing again, which makes me suspicious i'm doing something wrong
+        self.table_widget.currentCellChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.update_rect_labels))
         #endregion
 
         #region Tab 2: Conversion
@@ -633,6 +655,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.table_widget.setItem(row_number, 3, QtWidgets.QTableWidgetItem(str(coords[3]))) #row, column, QtWidgets.QTableWidgetItem; zero-indexed
             self.table_widget.setItem(row_number, 4, QtWidgets.QTableWidgetItem(""))
             self.table_widget.setItem(row_number, 5, QtWidgets.QTableWidgetItem(""))#we can add the color property later
+            self.table_widget.selectRow(row_number)
 
         #we can perform brute-force checking with QtCore.QRect.intersects(<QtCore.QRect2>)
         #the algorithm below checks each possible overlap, one-by-one (but does not check the same two rectangles for overlap twice)
@@ -834,6 +857,18 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #so that the menu is placed correctly relative to the mouse;
         #"where is <pos>'s position in table_widget relative to the global screen?"
         action = menu.exec_(self.table_widget.mapToGlobal(pos))
+    def update_rect_labels(self):
+        #return selected rows
+        #maybe make this independent...?
+        #https://stackoverflow.com/questions/5927499/how-to-get-selected-rows-in-qtableview
+        #print(row, column)
+        selected_rows = []
+        #for item in self.table_widget.selectedIndexes():
+        for item in self.table_widget.selectedItems():
+            #print(item.row(), item.column())
+            if item.row() not in selected_rows:
+                selected_rows.append(item.row())
+        print(selected_rows)
     def update_csv_export_text(self, button):
         '''Called when a button in self.radio_group is clicked, passing in the clicked button
         `button`. Based on this button's text, update the description label below the radio buttons.'''
