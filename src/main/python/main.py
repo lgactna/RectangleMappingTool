@@ -125,6 +125,15 @@ don't add a preference change of the undo array length to the array itself
 so we can just avoid the issues that are associated with that lol
 '''
 
+#stylistic note: i've opted to use snake_case for most parts of this program
+#there are some things that remain camelCase, as it felt more natural for me to retain
+#Qt-like style - the custom signals are an example
+
+#also yes this program is in great need of a code review and refactoring
+#apparently a single python script handling both graphics and logic is :thonk:
+#https://softwareengineering.stackexchange.com/questions/127245/how-can-i-separate-the-user-interface-from-the-business-logic-while-still-mainta
+#gsearch: "separate business logic from ui"
+
 def get_prefs(source="user"):
     '''Get `data` from either preferences.json or default.json.
     `source` is a `str`, either `"user"` or `"default"`. The default is `"user"`.\n
@@ -550,6 +559,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #region All other initialization
         self.load_from_prefs()
+
+        #you know, something tells me this should not have a billion methods
 
     def change_preference(self, preference, value):
         '''Change `preference` to `value` and perform additional actions as necessary.
@@ -1277,9 +1288,28 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.conversion_groupbox.setVisible(True)
             self.toggle_show_conv_button.setArrowType(QtCore.Qt.UpArrow)
     def change_default_pen_color(self):
-        '''Open a dialog allowing the user to change the default rectangle color.'''
+        '''Open a dialog allowing the user to change the default rectangle color.
+        Also prompts the user on whether or not they'd like rectangles with a color of
+        "Default" to remain the old default color - converting the table fields to rgb -
+        or use the newly-defined default color.'''
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         if new_color.isValid():
+            response = QtWidgets.QMessageBox.question(self, "Recolor default-colored rectangles?",
+                                          '<p>Do you want rectangles with a color of "Default" to '
+                                          'remain the old default color?</p>'
+                                          '<p>If you select "Yes", then rectangles currently with a color of '
+                                          '"Default" will have their colors explicitly set to the old default ' 
+                                          'color, at which point they will use the (r,g,b) format.</p>'
+                                          '<p>If you select "No", these rectangles will take on the color '
+                                          'you just selected and will continue to have "Default" '
+                                          'as their color in the coordinate table.</p>',
+                                          QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if response == QtWidgets.QMessageBox.Yes:
+                current_default = self.drawing_area.settings['default_color']
+                for rect in self.drawing_area.rects:
+                    print(current_default)
+                    print(current_default.getRgb())
+                    rect[1] = current_default
             self.drawing_area.set_pen_color(new_color)
             self.change_preference('default_color', list(new_color.getRgb()))
             self.update_all()
