@@ -28,7 +28,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>478</width>
+         <width>450</width>
          <height>646</height>
         </rect>
        </property>
@@ -64,7 +64,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -398,6 +398,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="label_33">
+          <property name="text">
+           <string>Note that default-colored rectangles will have their colors exported as (literally) &quot;Default&quot;, which maintains consistency on CSV import. If you want to export the actual colors, you can work around this by changing your default color and selecting &quot;yes&quot; on the prompt that follows.</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="Line" name="line_4">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -562,8 +572,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>428</width>
-             <height>919</height>
+             <width>456</width>
+             <height>909</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
@@ -968,7 +978,7 @@
     <addaction name="actionOpen_image"/>
     <addaction name="actionSave_image_as"/>
     <addaction name="separator"/>
-    <addaction name="actionExport_coordinates_2"/>
+    <addaction name="actionExport_coordinates"/>
     <addaction name="actionImport_coordinates"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
@@ -1022,11 +1032,6 @@
    </property>
   </action>
   <action name="actionExport_coordinates">
-   <property name="text">
-    <string>Save coordinates...</string>
-   </property>
-  </action>
-  <action name="actionExport_coordinates_2">
    <property name="text">
     <string>Export coordinates...</string>
    </property>

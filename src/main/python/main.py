@@ -91,9 +91,11 @@ default_prefpath = appctxt.get_resource('default.json')
         done - right-click custom context menu
         done - define behavior for changing custom colors (warn that custom colors will be discarded if colors are enabled and then disabled)
 
+        done - edit table values and update accordingly
         csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
         table validators/restrict editing
+        https://stackoverflow.com/questions/37621753/how-validate-a-cell-in-qtablewidget
         docstring standards conformity
         other pylint stuff (probably in a fork)
 
@@ -107,11 +109,6 @@ default_prefpath = appctxt.get_resource('default.json')
         dropped - click row (or row element) to highlight associated rectangle in some way
         ^start a timer that regularly changes the alpha on these rectangles, as rect[n][1] is a qcolor of rgba; change the a component
         ^upon the row being changed, immediately force the alpha to be 255, loading from an array of the currently flashing rects
-        dropped - edit table values and update accordingly
-        ^or even better: on RectangleStarted, disconnect itemChanged
-        then on RectangleFinished, reconnect the slot
-        dropped - toolbar (if needed)
-        ^insufficient actions to justify a toolbar for right now
 
         rewrite = when logic and ui are separated
 
@@ -480,6 +477,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionOpen_image.triggered.connect(self.open_image)
         self.actionClear_all.triggered.connect(self.clear_all)
         self.actionSave_image_as.triggered.connect(self.save_file)
+        self.actionImport_coordinates.triggered.connect(self.csv_import)
+        self.actionExport_coordinates.triggered.connect(lambda: self.tabWidget.setCurrentIndex(2))
         #endregion
 
         #region Tab 1: Coordinate Table
@@ -988,7 +987,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         number = self.table_widget.rowCount() + 1
         self.current_selected_label.setText("Currently drawing rectangle %s"%number)
         self.current_coordinates_label.setText(f"Coordinates: {coords[0]}, {coords[1]}, {coords[2]}, {coords[3]}")
-        self.current_overlaps_label.setText("eeeeeeee")
+        self.current_overlaps_label.setText("")
     def update_rect_labels(self):
         selected = self.get_selected_rows()
         self.delete_rect_button.setEnabled(True)
@@ -1005,7 +1004,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.current_selected_label.setText("Rectangle %s selected"%(selected[0]+1))
             self.current_coordinates_label.setText(f"Coordinates: {coords[0]}, {coords[1]}, {coords[2]}, {coords[3]}")
             #probably set a conditional here...
-            self.current_overlaps_label.setText("eeeeeeee")
+            self.current_overlaps_label.setText("")
         else:
             #multiple selected
             for i in range(0, len(selected)):
@@ -1125,11 +1124,49 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.export_window = AdvancedExportWindow(self.get_column_headers(), self.table_widget, self.converted_table_widget)
         self.export_window.show()
     def csv_import(self):
-        '''
-        step 1: parse data
-        if the last column == y2_conv:
-            work from :-4
-        '''
+        '''a'''
+        QtWidgets.QMessageBox.information(self, "Import information",
+                                        'Click <a href="https://github.com/aacttelemetry">here</a>'
+                                        ' for more information on importing.',
+                                        QtWidgets.QMessageBox.Ok)
+        #step 1: parse data
+        #if the last column == y2_conv:
+        #work from [:-4]
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File",
+                                                   QtCore.QDir.currentPath(),
+                                                   "CSV (Comma delimited) (*.csv);;All Files (*)")
+        if file_name:
+            if self.drawing_area.rects:
+                response = QtWidgets.QMessageBox.question(self, "Reset drawing area and import?",
+                                                        'Importing new coordinates will reset the canvas! Do you '
+                                                        'want to import coordinates from a CSV file anyways?',
+                                                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                if response == QtWidgets.QMessageBox.No:
+                    #closing the window also seems to return this
+                    return None
+            try:
+                final = []
+                with open(file_name, mode='r', newline='') as csv_file:
+                    reader = csv.reader(csv_file)
+                    data = list(reader)
+                    for i in range(1,len(data)):
+                        row = data[i]
+                        point_1 = QtCore.QPoint(int(row[0]), int(row[1]))
+                        point_2 = QtCore.QPoint(int(row[2]), int(row[3]))
+                        rect = QtCore.QRect(point_1, point_2)
+                        if row[5] == "Default":
+                            color = "Default"
+                        else:
+                            color = QtGui.QColor(*[int(item) for item in row[5].split(",")])
+                        final.append([rect, color])
+                self.table_widget.itemChanged.disconnect(self.update_data_from_item_change)
+                self.drawing_area.rects = final
+                self.update_all()
+                self.table_widget.itemChanged.connect(self.update_data_from_item_change)
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Import failed",
+                                     "<p>Error:</p><p>%s</p>"%e,
+                                     QtWidgets.QMessageBox.Ok)
     def get_column_headers(self):
         '''Standalone function for getting the available variables for an
         export. Returns a list containing the (names of) valid column headers,
