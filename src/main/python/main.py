@@ -154,7 +154,6 @@ class CanvasArea(QtWidgets.QWidget):
     Note that CanvasArea is referred to as "the canvas" across (most) docstrings and comments.'''
     #these are custom signals that will not work if placed in __init__
     #they must be class variables/attributes declared here
-    dataChanged = QtCore.pyqtSignal()
     posChanged = QtCore.pyqtSignal(int, int)
     sizeChanged = QtCore.pyqtSignal()
     #will be used later
@@ -298,7 +297,7 @@ class CanvasArea(QtWidgets.QWidget):
             self.scribbling = False
             self.rects.append([QtCore.QRect(self.starting_point, self.end_point), "Default"])
             #here we should also add this data to the table and update it
-            self.dataChanged.emit() #this says that the rectangle data has changed
+            self.rectangleFinished.emit()
             self.draw_all_rects()
 
     def paintEvent(self, event): # pylint: disable=invalid-name
@@ -430,7 +429,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.setFixedSize(400, 300)
         self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor)) #make this responsive to a setting
 
-        self.drawing_area.dataChanged.connect(self.update_tables)
+        self.drawing_area.rectangleFinished.connect(self.update_tables)
         self.drawing_area.posChanged.connect(self.update_coords)
         self.drawing_area.sizeChanged.connect(self.update_size_text)
         self.drawing_area.rectangleUpdated.connect(self.update_rect_labels_active)
@@ -457,7 +456,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #so we do the 10 ms thing again, which makes me suspicious i'm doing something wrong
         #probably the order in which things are processed
         self.table_widget.currentCellChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.update_rect_labels))
-        self.change_rect_color_button.clicked.connect(self.change_rectangle_color)
+        self.change_rect_color_button.clicked.connect(self.recolor_selected_rectangles)
+        self.delete_rect_button.clicked.connect(self.delete_selected_rectangles)
         #endregion
 
         #region Tab 2: Conversion
@@ -885,7 +885,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def show_table_menu(self, pos):
         #https://stackoverflow.com/questions/36614635/pyqt-right-click-menu-for-qcombobox
         menu = QtWidgets.QMenu()
-        test_action = menu.addAction("Selection", lambda: print("a"))
+        delete_action = menu.addAction("Delete", self.delete_selected_rectangles)
+        recolor_action = menu.addAction("Recolor", self.recolor_selected_rectangles)
         #https://doc.qt.io/qt-5/qwidget.html#mapToGlobal
         #exec is necessary to show this menu
         #mapToGlobal will determine where it should go
@@ -895,7 +896,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         action = menu.exec_(self.table_widget.mapToGlobal(pos))
     def get_selected_rows(self):
         #return selected rows
-        #maybe make this independent...?
         #https://stackoverflow.com/questions/5927499/how-to-get-selected-rows-in-qtableview
         #print(row, column)
         selected_rows = []
@@ -905,8 +905,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if item.row() not in selected_rows:
                 selected_rows.append(item.row())
         return selected_rows
+    def delete_selected_rectangles(self):
+        selected = self.get_selected_rows()
+        self.delete_rows(selected)
     def delete_rows(self, rows):
-        pass
+        #https://stackoverflow.com/questions/3940128/how-can-i-reverse-a-list-in-python
+        #work from most recent to least recent to prevent conflicts
+        for row_index in reversed(rows):
+            self.table_widget.removeRow(row_index)
+            self.converted_table_widget.removeRow(row_index)
+            del self.drawing_area.rects[row_index]
+        self.drawing_area.draw_all_rects()
     def update_rect_labels_active(self, temp_rect):
         coords = temp_rect.getCoords()
         number = self.table_widget.rowCount() + 1
@@ -1266,7 +1275,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.drawing_area.set_pen_color(new_color)
             self.change_preference('default_color', list(new_color.getRgb()))
             self.update_all()
-    def change_rectangle_color(self):
+    def recolor_selected_rectangles(self):
         rows = self.get_selected_rows()
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         print(new_color)
