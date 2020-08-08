@@ -307,12 +307,18 @@ class CanvasArea(QtWidgets.QWidget):
         #will be done as part of the more expansive undo rework
 
     def mousePressEvent(self, event): # pylint: disable=invalid-name
+        '''What happens when the user begins drawing a rectangle. Requires that
+        the left mouse button be clicked for a rectangle to be drawn.'''
         if event.button() == QtCore.Qt.LeftButton:
             self.starting_point = event.pos()
             self.scribbling = True
             self.rectangleStarted.emit()
 
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
+        '''What happens when the user moves their mouse within the canvas area.
+        Always emits posChanged to update the cursor's current pixel position. If
+        drawing a rectangle, update a real-time view of the rectangle and its coordinates
+        if enabled by the user.'''
         self.posChanged.emit(event.pos().x(), event.pos().y())
         if (event.buttons() & QtCore.Qt.LeftButton) and self.scribbling:
             if self.settings['active_redraw']:
@@ -323,6 +329,8 @@ class CanvasArea(QtWidgets.QWidget):
                 del self.rects[-1]
 
     def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
+        '''What happens when the user stops drawing, releasing the left mouse button.
+        Adds the final rectangle (based on the point of mouse release) and redraws as necessary.'''
         if event.button() == QtCore.Qt.LeftButton and self.scribbling:
             self.end_point = event.pos()
             self.scribbling = False
@@ -593,17 +601,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def change_preference(self, preference, value):
         '''Change `preference` to `value` and perform additional actions as necessary.
         This includes updating preferences.json.\n
-        Available preferences (all `bool`, except the last two):\n
-        `active_redraw`: (Re)draw the current rectangle during mousedown.\n
-        `active_coordinates`: Update the coordinate label during mousedown.\n
-        `active_overlaps`: Calculate overlapping rectangles and update the table during mousedown.\n
-        `check_overlaps`: Calculate overlapping rectangles after a rectangle has been drawn.\n
-        `crop_image`: Crop loaded images to fit canvas (instead of upsizing the canvas to fit).\n
-        `stretch_image`: Stretch the image to fit canvas (instead of downsizing the canvas).\n
-        `keep_ratio`: If `stretch_image` is enabled, preserve aspect ratio on stretch.\n
-        `use_crosshair`: Use a crosshair cursor instead of the standard pointer cursor.\n
-        `default_color (list)`: The default color used for drawing rectangles, represented by an rgba array.\n
-        `default_width (int)`: The default width of rectangles in pixels.'''
+        For more information, please see the README.'''
         #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
         self.settings[preference] = value
 
@@ -692,9 +690,13 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             write_prefs(default_prefs)
             self.load_from_prefs()
     def update_on_rect_start(self):
+        '''Holds things that should be done when a rectangle is started.
+        It is likely to play a larger role when this program is rewritten.'''
         #things to do when a rectangle is started
         self.table_widget.itemChanged.disconnect(self.update_data_from_item_change)
     def update_on_rect_finish(self):
+        '''Holds things that should be done when a rectangle is finished.
+        It is likely to play a larger role when this program is rewritten.'''
         #things to do when a rectangle is finished.
         #on rework, this should really be the major function.
         self.table_widget.itemChanged.connect(self.update_data_from_item_change)
@@ -813,6 +815,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.draw_all_rects()
         self.update_tables()
     def update_data_from_item_change(self, table_item):
+        '''When the user edits a coordinate point in the table, update the canvas to reflect
+        the change. Currently throws an error if the user edits anything other than the first
+        four columns, but has no lasting effects (as the invalid value is overwritten on the next
+        update).'''
         rect_index = table_item.row()
         data_index = table_item.column()
 
@@ -921,6 +927,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conversion_values['y2'] = float(self.conv_y2_edit.text())
         self.update_tables()
     def add_custom_field(self):
+        '''Prompt the user for the name of a new field, where they can enter custom data for export.
+        As of right now, update_tables() will overwrite existing data in these columns. Use
+        is strongly discouraged - write to a CSV and add your new data there instead.'''
         #add handling for blank responses...
         new_field_name, response = QtWidgets.QInputDialog.getText(self, "Add new custom field",
                                                   "Custom field name:")
@@ -949,6 +958,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #print(self.table_widget.columnCount())
         #print(self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-2).text())
     def show_table_menu(self, pos):
+        '''Holds the custom context menu when the user right-clicks on the coordinate table.
+        Here, the user can delete or recolor the currently selected rows/rectangles.'''
         #https://stackoverflow.com/questions/36614635/pyqt-right-click-menu-for-qcombobox
         menu = QtWidgets.QMenu()
         delete_action = menu.addAction("Delete", self.delete_selected_rectangles)
@@ -961,6 +972,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #"where is <pos>'s position in table_widget relative to the global screen?"
         action = menu.exec_(self.table_widget.mapToGlobal(pos))
     def get_selected_rows(self):
+        '''Returns a list containing the rows currently selected by the user.'''
         #return selected rows
         #https://stackoverflow.com/questions/5927499/how-to-get-selected-rows-in-qtableview
         #print(row, column)
@@ -972,9 +984,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 selected_rows.append(item.row())
         return selected_rows
     def delete_selected_rectangles(self):
+        '''Deletes the rectangles currently selected on the table.'''
         selected = self.get_selected_rows()
         self.delete_rows(selected)
     def delete_rows(self, rows):
+        '''Delete `rows` (`list`) from the table and their respective rectangles on the canvas.'''
         #https://stackoverflow.com/questions/3940128/how-can-i-reverse-a-list-in-python
         #work from most recent to least recent to prevent conflicts
         for row_index in reversed(rows):
@@ -983,12 +997,16 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             del self.drawing_area.rects[row_index]
         self.drawing_area.draw_all_rects()
     def update_rect_labels_active(self, temp_rect):
+        '''Update the upper-left labels above the table to reflect the coordinates of a 
+        rectangle currently being drawn, `temp_rect`, which is a QRect object.'''
         coords = temp_rect.getCoords()
         number = self.table_widget.rowCount() + 1
         self.current_selected_label.setText("Currently drawing rectangle %s"%number)
         self.current_coordinates_label.setText(f"Coordinates: {coords[0]}, {coords[1]}, {coords[2]}, {coords[3]}")
         self.current_overlaps_label.setText("")
     def update_rect_labels(self):
+        '''On row selection change, update the upper-left labels to reflect what the user
+        currently has selected. Also modifies buttons if necessary.'''
         selected = self.get_selected_rows()
         self.delete_rect_button.setEnabled(True)
         self.change_rect_color_button.setEnabled(True)
@@ -1014,6 +1032,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.current_coordinates_label.clear()
             self.current_overlaps_label.clear()
     def flash_selected(self):
+        '''Would have flashed the currently selected rectangle (based on table row selection)
+        by starting a QTimer and toggling that rectangle's alpha value.'''
         #method 1: flash by enlarging rectangle
         #method 2: flash by changing color
         #method 3: flash by hiding and then not
@@ -1124,7 +1144,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.export_window = AdvancedExportWindow(self.get_column_headers(), self.table_widget, self.converted_table_widget)
         self.export_window.show()
     def csv_import(self):
-        '''a'''
+        '''Import coordinates and colors from a CSV file of the format
+        x1, y1, x2, y2, <any>, color, ...\n
+        Any fields after color are ignored.'''
         QtWidgets.QMessageBox.information(self, "Import information",
                                         'Click <a href="https://github.com/aacttelemetry">here</a>'
                                         ' for more information on importing.',
@@ -1324,6 +1346,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         new_text = StringDialog.launch(self.fstring_edit.toPlainText(),self.vars_label.text())
         self.fstring_edit.setPlainText(new_text)
     def undo_new(self, action):
+        '''What should be the more encompassing undo function.'''
         pass
     def open_image(self):
         '''Handles opening an image.
@@ -1348,6 +1371,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.drawing_area.open_image(file_name)
                 #at this point, we should execute the resize logic
     def save_file(self):
+        '''Save the current contents of the canvas to an image of the user's
+        desired image format.'''
         initialPath = QtCore.QDir.currentPath() + '/untitled'
 
         #QImageWriter is used here for determining saveable file formats
@@ -1379,6 +1404,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #delete most recent table entry on undo
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
     def toggle_conversion_info(self):
+        '''Toggle the visibility of the big block of text above the
+        conversion table.'''
         if self.conversion_groupbox.isVisible():
             self.conversion_groupbox.setVisible(False)
             self.toggle_show_conv_button.setArrowType(QtCore.Qt.DownArrow)
@@ -1412,6 +1439,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.change_preference('default_color', list(new_color.getRgb()))
             self.update_all()
     def recolor_selected_rectangles(self):
+        '''Recolor the rectangles reflected by the rows currently selected in the coordinate
+        table.'''
         rows = self.get_selected_rows()
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         print(new_color)
