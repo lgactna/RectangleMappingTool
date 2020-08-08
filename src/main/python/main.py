@@ -87,12 +87,12 @@ default_prefpath = appctxt.get_resource('default.json')
         done - highlight row on draw finish (because it already does that)
         done - disable "change color" button if disabled (because color is now mandatory)
         done - click row (or row element) to show rectangle info
+        done - right-click custom context menu
         ^excludes overlap functoinality
         fix overlap system such that the label is real-time updatable
         click row (or row element) to highlight associated rectangle in some way
-        right-click custom context menu
         edit table values and update accordingly
-        warn that custom colors will be discarded if colors are enabled and then disabled
+        define behavior for changing custom colors (warn that custom colors will be discarded if colors are enabled and then disabled)
         toolbar (if needed)
         csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
@@ -506,7 +506,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.crop_image_checkbox.toggled.connect(lambda: self.change_preference("crop_image", self.crop_image_checkbox.isChecked()))
         self.stretch_image_checkbox.toggled.connect(lambda: self.change_preference("stretch_image", self.stretch_image_checkbox.isChecked()))
         self.use_crosshair_checkbox.toggled.connect(lambda: self.change_preference("use_crosshair", self.use_crosshair_checkbox.isChecked()))
-        self.show_color_checkbox.toggled.connect(lambda: self.change_preference("show_color", self.show_color_checkbox.isChecked()))
         self.keep_ratio_checkbox.toggled.connect(lambda: self.change_preference("keep_ratio", self.keep_ratio_checkbox.isChecked()))
 
         self.set_canvas_size_button.clicked.connect(self.change_canvas_size)
@@ -524,7 +523,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             "stretch_image":False,
             "keep_ratio":True,
             "use_crosshair":True,
-            "show_color":False,
             "default_color":[0, 0, 255, 255],
             "default_width":1,
             "conv_round":6,
@@ -564,7 +562,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         `stretch_image`: Stretch the image to fit canvas (instead of downsizing the canvas).\n
         `keep_ratio`: If `stretch_image` is enabled, preserve aspect ratio on stretch.\n
         `use_crosshair`: Use a crosshair cursor instead of the standard pointer cursor.\n
-        `show_color`: Enable per-rectangle colors and add a "color" column to the table.\n
         `default_color (list)`: The default color used for drawing rectangles, represented by an rgba array.\n
         `default_width (int)`: The default width of rectangles in pixels.'''
         #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
@@ -613,11 +610,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #table logic
         #make sure we don't destroy the user's custom fields if we do this
-        if self.settings['check_overlaps'] and self.settings['show_color']:
+        if self.settings['check_overlaps']:
             pass
-        elif self.settings['check_overlaps']:
-            pass
-        elif self.settings['show_overlaps']:
+        elif self.settings['show_overlaps']: #show_overlaps isn't a valid setting?
             pass
         else:
             #maybe default column should be set to 3 in __init__?
@@ -633,7 +628,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.stretch_image_checkbox.setChecked(self.settings['stretch_image'])
         self.keep_ratio_checkbox.setChecked(self.settings['keep_ratio'])
         self.use_crosshair_checkbox.setChecked(self.settings['use_crosshair'])
-        self.show_color_checkbox.setChecked(self.settings['show_color'])
         self.conv_round_edit.setText(str(self.settings['conv_round']))
         self.left_identifier_edit.setText(self.settings['left_identifier'])
         self.right_identifier_edit.setText(self.settings['right_identifier'])
@@ -1057,6 +1051,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         and handles all needed functionality.'''
         self.export_window = AdvancedExportWindow(self.get_column_headers(), self.table_widget, self.converted_table_widget)
         self.export_window.show()
+    def csv_import(self):
+        '''
+        step 1: parse data
+        if the last column == y2_conv:
+            work from :-4
+        '''
     def get_column_headers(self):
         '''Standalone function for getting the available variables for an
         export. Returns a list containing the (names of) valid column headers,
