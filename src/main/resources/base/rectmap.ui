@@ -28,11 +28,28 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>457</width>
+         <width>478</width>
          <height>620</height>
         </rect>
        </property>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="2">
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="coord_label">
+      <property name="text">
+       <string>x: 0 y: 0</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
      </widget>
     </item>
     <item row="0" column="3">
@@ -47,7 +64,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -181,81 +198,157 @@
        <attribute name="title">
         <string>Conversion</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
+       <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>You can define equivalent points/handles for the top-left and bottom-right corners of the drawing area, which will allow you to convert the pixel-based coordinates of a rectangle into a different numerical format (such as GPS bounding coordinates). Empty values default to 0.</string>
+         <widget class="QGroupBox" name="conversion_groupbox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="wordWrap">
+          <property name="maximumSize">
+           <size>
+            <width>451</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QGroupBox {border: none}</string>
+          </property>
+          <property name="title">
+           <string/>
+          </property>
+          <property name="flat">
            <bool>true</bool>
           </property>
+          <property name="checkable">
+           <bool>false</bool>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>You can define equivalent points/handles for the top-left and bottom-right corners of the drawing area, which will allow you to convert the pixel-based coordinates of a rectangle into a different numerical format (such as GPS bounding coordinates). Empty values default to 0.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_22">
+             <property name="text">
+              <string>Note that in order for this to work, you must draw or define your rectangles such that point 1 is at the top-left and point 2 is at the bottom-right. You will still get correct values otherwise, but they may be in the wrong order or represent the wrong corner of the rectangle.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_28">
+             <property name="text">
+              <string>This program defines point 1 as the point where you started drawing and point 2 as the point where you stopped drawing (released the mouse button).</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <item>
+              <layout class="QFormLayout" name="formLayout">
+               <item row="0" column="0">
+                <widget class="QLineEdit" name="conv_x1_edit"/>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLabel" name="conv_x1_label">
+                 <property name="text">
+                  <string>Top-left, x (x = 0 px)</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLineEdit" name="conv_y1_edit"/>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLabel" name="conv_y1_label">
+                 <property name="text">
+                  <string>Top-left, y (y = 0 px)</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLineEdit" name="conv_x2_edit"/>
+               </item>
+               <item row="2" column="1">
+                <widget class="QLabel" name="conv_x2_label">
+                 <property name="text">
+                  <string>Bottom-right, x (x = 400 px)</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLineEdit" name="conv_y2_edit"/>
+               </item>
+               <item row="3" column="1">
+                <widget class="QLabel" name="conv_y2_label">
+                 <property name="text">
+                  <string>Bottom-right, y (y = 300 px)</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QPushButton" name="set_handles_button">
+               <property name="text">
+                <string>Set handles</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
          </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <layout class="QFormLayout" name="formLayout">
-            <item row="0" column="0">
-             <widget class="QLineEdit" name="conv_x1_edit"/>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="conv_x1_label">
-              <property name="text">
-               <string>Top-left, x (x = 0 px)</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLineEdit" name="conv_y1_edit"/>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="conv_y1_label">
-              <property name="text">
-               <string>Top-left, y (y = 0 px)</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLineEdit" name="conv_x2_edit"/>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLabel" name="conv_x2_label">
-              <property name="text">
-               <string>Bottom-right, x (x = 400 px)</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLineEdit" name="conv_y2_edit"/>
-            </item>
-            <item row="3" column="1">
-             <widget class="QLabel" name="conv_y2_label">
-              <property name="text">
-               <string>Bottom-right, y (y = 300 px)</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>The converted coordinates will be shown below (read-only):</string>
+            </property>
+            <property name="wordWrap">
+             <bool>false</bool>
+            </property>
+           </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="set_handles_button">
+           <widget class="QToolButton" name="toggle_show_conv_button">
             <property name="text">
-             <string>Set handles</string>
+             <string>...</string>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::UpArrow</enum>
             </property>
            </widget>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_19">
-          <property name="text">
-           <string>The converted coordinates will be shown below (read-only):</string>
-          </property>
-          <property name="wordWrap">
-           <bool>false</bool>
-          </property>
-         </widget>
         </item>
         <item>
          <widget class="QTableWidget" name="converted_table_widget">
@@ -469,8 +562,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>449</width>
-             <height>909</height>
+             <width>428</width>
+             <height>919</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
@@ -851,23 +944,6 @@
         </item>
        </layout>
       </widget>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="coord_label">
-      <property name="text">
-       <string>x: 0 y: 0</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1" rowspan="2">
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
      </widget>
     </item>
    </layout>

@@ -468,6 +468,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conv_x2_edit.setValidator(QtGui.QDoubleValidator())
         self.conv_y2_edit.setValidator(QtGui.QDoubleValidator())
         self.set_handles_button.clicked.connect(self.set_conversion_values)
+        self.toggle_show_conv_button.clicked.connect(self.toggle_conversion_info)
         #endregion
 
         #region Tab 3: Export Data
@@ -1268,6 +1269,13 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.undo_last()
         #delete most recent table entry on undo
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
+    def toggle_conversion_info(self):
+        if self.conversion_groupbox.isVisible():
+            self.conversion_groupbox.setVisible(False)
+            self.toggle_show_conv_button.setArrowType(QtCore.Qt.DownArrow)
+        else:
+            self.conversion_groupbox.setVisible(True)
+            self.toggle_show_conv_button.setArrowType(QtCore.Qt.UpArrow)
     def change_default_pen_color(self):
         '''Open a dialog allowing the user to change the default rectangle color.'''
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
