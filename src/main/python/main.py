@@ -703,19 +703,25 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     #print(f"Rectangle {rect1_index} overlaps with {rect2_index}?"+str(intersects))
                     current = self.table_widget.item(rect1_index, 4).text()
                     current2 = self.table_widget.item(rect2_index, 4).text()
+                    #print("current = <"+current+">")
+                    #print("current2 = <"+current2+">")
                     if intersects:
                         if current == "":
+                            #print(f"Added {rect2_index+1} to {rect1_index+1}")
                             self.table_widget.setItem(rect1_index, 4,
                                                       QtWidgets.QTableWidgetItem(str(rect2_index+1)))
                         else:
+                            #print(f"Added {rect2_index+1} to {rect1_index+1}")
                             self.table_widget.setItem(rect1_index, 4,
                                                       QtWidgets.QTableWidgetItem(current+","+str(rect2_index+1)))
                         if current2 == "":
+                            #print(f"Added {rect1_index+1} to {rect2_index+1}")
                             self.table_widget.setItem(rect2_index, 4,
                                                       QtWidgets.QTableWidgetItem(str(rect1_index+1)))
                         else:
+                            #print(f"Added {rect1_index+1} to {rect2_index+1}")
                             self.table_widget.setItem(rect2_index, 4,
-                                                      QtWidgets.QTableWidgetItem(current+","+str(rect1_index+1)))
+                                                      QtWidgets.QTableWidgetItem(current2+","+str(rect1_index+1)))
         #i seriously doubt there's any need to have a live conversion of this table
         #will fix later
         #put in whatever gets connected to RectangleFinished
