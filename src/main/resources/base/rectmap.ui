@@ -47,7 +47,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -470,7 +470,7 @@
              <x>0</x>
              <y>0</y>
              <width>449</width>
-             <height>916</height>
+             <height>932</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
@@ -499,16 +499,22 @@
              </widget>
             </item>
             <item row="2" column="0">
-             <widget class="QCheckBox" name="active_table_checkbox">
+             <widget class="QCheckBox" name="active_coordinates_checkbox">
               <property name="text">
                <string/>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
             <item row="2" column="1">
              <widget class="QLabel" name="label_9">
               <property name="text">
-               <string>Update table in real-time.</string>
+               <string>Update rectangle coordinates in real-time (located above the coordinate table, to the left).</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
               </property>
              </widget>
             </item>

@@ -83,13 +83,15 @@ default_prefpath = appctxt.get_resource('default.json')
         done - custom fields (but not the fact they get deleted, which is part of the table overhaul)
         done - custom fstring identifiers
         done - save image
-        update coordinate table upper-left labels on draw finish
-        highlight row on draw finish
-        click row (or row element) to show rectangle info
+        done - update coordinate table upper-left labels on draw finish
+        done - highlight row on draw finish (because it already does that)
+        done - disable "change color" button if disabled (because color is now mandatory)
+        done - click row (or row element) to show rectangle info
+        ^excludes overlap functoinality
+        fix overlap system such that the label is real-time updatable
         click row (or row element) to highlight associated rectangle in some way
         right-click custom context menu
         edit table values and update accordingly
-        disable "change color" button if disabled
         warn that custom colors will be discarded if colors are enabled and then disabled
         toolbar (if needed)
         csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
@@ -181,7 +183,7 @@ class CanvasArea(QtWidgets.QWidget):
 
         self.settings = {
             "active_redraw": True,
-            "active_table": False,
+            "active_coordinates": False,
             "crop_image": False, #crop large images
             "stretch_image": False, #stretch small images
             "keep_ratio": True, #preserve aspect ratio on stretch
@@ -286,7 +288,7 @@ class CanvasArea(QtWidgets.QWidget):
             if self.settings['active_redraw']:
                 self.rects.append([QtCore.QRect(self.starting_point, event.pos()), "Default"])
                 self.draw_all_rects()
-                if self.settings['active_table']:
+                if self.settings['active_coordinates']:
                     self.rectangleUpdated.emit(self.rects[-1][0])
                 del self.rects[-1]
 
@@ -498,7 +500,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #im not sure if there's a better way to do this lol
         #pylint is fuming but my screen is wide enough so ill change it later
         self.active_redraw_checkbox.toggled.connect(lambda: self.change_preference("active_redraw", self.active_redraw_checkbox.isChecked()))
-        self.active_table_checkbox.toggled.connect(lambda: self.change_preference("active_table", self.active_table_checkbox.isChecked()))
+        self.active_coordinates_checkbox.toggled.connect(lambda: self.change_preference("active_coordinates", self.active_coordinates_checkbox.isChecked()))
         self.active_overlaps_checkbox.toggled.connect(lambda: self.change_preference("active_overlaps", self.active_overlaps_checkbox.isChecked()))
         self.check_overlaps_checkbox.toggled.connect(lambda: self.change_preference("check_overlaps", self.check_overlaps_checkbox.isChecked()))
         self.crop_image_checkbox.toggled.connect(lambda: self.change_preference("crop_image", self.crop_image_checkbox.isChecked()))
@@ -515,7 +517,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #but I found it easier to refer to these values here rather than doing it across classes
         self.settings = {
             "active_redraw":True,
-            "active_table":False,
+            "active_coordinates":False,
             "active_overlaps":False, #this setting is broken and needs to be fixed along with the overlap stuff
             "check_overlaps":True,
             "crop_image":False,
@@ -540,21 +542,22 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.custom_column_headers = []
         self.undo_queue = []
+        '''
+        self.flash_timer = QtCore.QTimer()
+        self.flash_timer.start(1000)
+        self.flash_timer.timeout.connect(self.flash_selected)
+        '''
         #endregion
 
         #region All other initialization
         self.load_from_prefs()
 
-        #this needs to be thrown into a function later, especially if color is a thing
-        if not self.settings['check_overlaps']:
-            self.table_widget.setColumnCount(4)
-        #endregion
     def change_preference(self, preference, value):
         '''Change `preference` to `value` and perform additional actions as necessary.
         This includes updating preferences.json.\n
         Available preferences (all `bool`, except the last two):\n
         `active_redraw`: (Re)draw the current rectangle during mousedown.\n
-        `active_table`: Update the table during mousedown.\n
+        `active_coordinates`: Update the coordinate label during mousedown.\n
         `active_overlaps`: Calculate overlapping rectangles and update the table during mousedown.\n
         `check_overlaps`: Calculate overlapping rectangles after a rectangle has been drawn.\n
         `crop_image`: Crop loaded images to fit canvas (instead of upsizing the canvas to fit).\n
@@ -579,8 +582,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.CrossCursor))
             else:
                 self.drawing_area.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
-        if preference == "active_table" or preference == "check_overlaps":
-            if self.settings['active_table'] and self.settings['check_overlaps']:
+        if preference == "active_coordinates" or preference == "check_overlaps":
+            if self.settings['active_coordinates'] and self.settings['check_overlaps']:
                 self.active_overlaps_checkbox.setEnabled(True)
             else:
                 self.active_overlaps_checkbox.setEnabled(False)
@@ -623,7 +626,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         #update checkboxes and stuff to match...
         self.active_redraw_checkbox.setChecked(self.settings['active_redraw'])
-        self.active_table_checkbox.setChecked(self.settings['active_table'])
+        self.active_coordinates_checkbox.setChecked(self.settings['active_coordinates'])
         self.active_overlaps_checkbox.setChecked(self.settings['active_overlaps'])
         self.check_overlaps_checkbox.setChecked(self.settings['check_overlaps'])
         self.crop_image_checkbox.setChecked(self.settings['crop_image'])
@@ -636,7 +639,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.right_identifier_edit.setText(self.settings['right_identifier'])
 
         #also enabled/disabled logic
-        if self.settings['active_table'] and self.settings['check_overlaps']:
+        if self.settings['active_coordinates'] and self.settings['check_overlaps']:
             self.active_overlaps_checkbox.setEnabled(True)
         else:
             self.active_overlaps_checkbox.setEnabled(False)
@@ -909,6 +912,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.delete_rect_button.setEnabled(True)
         self.change_rect_color_button.setEnabled(True)
         if len(selected) == 0:
+            #i wasn't able to actually get this case to happen but it's here anyways
             self.current_selected_label.setText("No rectangles selected")
             self.current_coordinates_label.clear()
             self.current_overlaps_label.clear()
@@ -928,6 +932,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.current_selected_label.setText("Rectangles %s selected"%(rects))
             self.current_coordinates_label.clear()
             self.current_overlaps_label.clear()
+    def flash_selected(self):
+        #method 1: flash by enlarging rectangle
+        #method 2: flash by changing color
+        #method 3: flash by hiding and then not
+        #maybe later - it's introducing too much complexity for such a minor feature
+        pass
     def update_csv_export_text(self, button):
         '''Called when a button in self.radio_group is clicked, passing in the clicked button
         `button`. Based on this button's text, update the description label below the radio buttons.'''
