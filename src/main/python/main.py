@@ -84,25 +84,47 @@ default_prefpath = appctxt.get_resource('default.json')
         done - custom fstring identifiers
         done - save image
         done - update coordinate table upper-left labels on draw finish
+        ^excludes overlap functionality
         done - highlight row on draw finish (because it already does that)
         done - disable "change color" button if disabled (because color is now mandatory)
         done - click row (or row element) to show rectangle info
         done - right-click custom context menu
-        ^excludes overlap functoinality
-        fix overlap system such that the label is real-time updatable
-        click row (or row element) to highlight associated rectangle in some way
-        edit table values and update accordingly
-        define behavior for changing custom colors (warn that custom colors will be discarded if colors are enabled and then disabled)
-        toolbar (if needed)
+        done - define behavior for changing custom colors (warn that custom colors will be discarded if colors are enabled and then disabled)
+
         csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
-        above -- probably done by setting an instance attribute in form of <action>,<additional_info>
-        unbreak the overlap system (which doesn't even work correctly in its current state)
-        disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
-        unbreak the draw system
-        unbreak the table system (use more and different signals)
+        table validators/restrict editing
         docstring standards conformity
         other pylint stuff (probably in a fork)
+
+        dropped = maybe sometime later
+
+        dropped - stop deleting data entered in custom fields on each table update
+        ^requires the rework where the table stops being the actual container instead of just a representation
+        dropped - fix overlap system such that the label is real-time updatable
+        ^this probably requires the logic-ui overhaul since overlap is calculated per-rectangle
+        ^i don't think it has any real value at the moment anyways
+        dropped - click row (or row element) to highlight associated rectangle in some way
+        ^start a timer that regularly changes the alpha on these rectangles, as rect[n][1] is a qcolor of rgba; change the a component
+        ^upon the row being changed, immediately force the alpha to be 255, loading from an array of the currently flashing rects
+        dropped - edit table values and update accordingly
+        ^or even better: on RectangleStarted, disconnect itemChanged
+        then on RectangleFinished, reconnect the slot
+        dropped - toolbar (if needed)
+        ^insufficient actions to justify a toolbar for right now
+
+        rewrite = when logic and ui are separated
+
+        really what ought to happen is the table SHOULD NOT be the actual container, but merely a user-viewable representation
+
+        rewrite -- unbreak the overlap system (which doesn't even work correctly in its current state)
+        rewrite -- disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
+        rewrite -- unbreak the draw system (don't redraw every single element on each update)
+        rewrite -- unbreak the table system (use more and different signals)
+        
+
+        Note: eraseRect via QPainter erases the area *inside* the rectangle defined, same as filling a borderless rectangle with white;
+        as such, unbreaking the draw system might not be as reasonable as currently thought...
 '''
 
 '''undo actions: (format: action | [old_data])
@@ -110,11 +132,11 @@ default_prefpath = appctxt.get_resource('default.json')
 of a ctrl+z so long as the user is focused on that input box
 change-preference | [preference, value]
 change-table-data | [[row, column], value]
-add-custom-field | [field_name, column]
-delete-rectangle | [rectangle_object, <index in drawing_area.rects>]
-open-image | [old_filepath]
-change-individual-color | [uhh...]
-draw-rectangle | rectangle_index (or none, since "delete last" is implied)
+add-custom-field | <NONE> (delete last implied)
+delete-rectangle | [[rectangle_object, <index in drawing_area.rects>],...]
+open-image | old_filepath
+change-individual-color | [[drawing_area.rects index, qcolor object], ...]
+draw-rectangle | <NONE> (delete last implied)
 change-conversion-handles | [x1,y1,x2,y2]
 
 change "rectangle object" to be an array of [rect_object, qcolor]?
@@ -133,6 +155,8 @@ so we can just avoid the issues that are associated with that lol
 #apparently a single python script handling both graphics and logic is :thonk:
 #https://softwareengineering.stackexchange.com/questions/127245/how-can-i-separate-the-user-interface-from-the-business-logic-while-still-mainta
 #gsearch: "separate business logic from ui"
+#https://softwareengineering.stackexchange.com/questions/336915/should-i-put-ui-and-logic-in-separate-classes
+#this will be done soontm in a different branch
 
 def get_prefs(source="user"):
     '''Get `data` from either preferences.json or default.json.
@@ -289,6 +313,7 @@ class CanvasArea(QtWidgets.QWidget):
         if event.button() == QtCore.Qt.LeftButton:
             self.starting_point = event.pos()
             self.scribbling = True
+            self.rectangleStarted.emit()
 
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
         self.posChanged.emit(event.pos().x(), event.pos().y())
@@ -417,7 +442,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ---
         in order for a qscrollarea to work, the child (here self.scrollAreaWidgetContents) must have its own layout
         however, obviously a layout will auto-resize elements inside it
-        so in order to account for this, we will manually set the minimum size of the newly-created drawing area 
+        so in order to account for this, we will manually set the minimum size of the newly-created drawing area
         thus forcing it to be that size and give us the scroll bars
         the above is what i understood from a bunch of qt forum and stackoverflow posts
         although the docs say that a standard resize() will be respected
@@ -441,7 +466,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.rectangleFinished.connect(self.update_tables)
         self.drawing_area.posChanged.connect(self.update_coords)
         self.drawing_area.sizeChanged.connect(self.update_size_text)
+        self.drawing_area.rectangleStarted.connect(self.update_on_rect_start)
         self.drawing_area.rectangleUpdated.connect(self.update_rect_labels_active)
+        self.drawing_area.rectangleFinished.connect(self.update_on_rect_finish)
         #endregion
 
         #region Action signals and slots
@@ -465,6 +492,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #so we do the 10 ms thing again, which makes me suspicious i'm doing something wrong
         #probably the order in which things are processed
         self.table_widget.currentCellChanged.connect(lambda: QtCore.QTimer.singleShot(10, self.update_rect_labels))
+        #see todo notes above
+        self.table_widget.itemChanged.connect(self.update_data_from_item_change)
         self.change_rect_color_button.clicked.connect(self.recolor_selected_rectangles)
         self.delete_rect_button.clicked.connect(self.delete_selected_rectangles)
         #endregion
@@ -663,6 +692,16 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             default_prefs = get_prefs("default")
             write_prefs(default_prefs)
             self.load_from_prefs()
+    def update_on_rect_start(self):
+        #things to do when a rectangle is started
+        self.table_widget.itemChanged.disconnect(self.update_data_from_item_change)
+    def update_on_rect_finish(self):
+        #things to do when a rectangle is finished.
+        #on rework, this should really be the major function.
+        self.table_widget.itemChanged.connect(self.update_data_from_item_change)
+        #add to undo system
+        self.undo_queue.append(["draw_rectangle"])
+        self.actionUndo.setText('Undo rectangle draw')
     def update_tables(self):
         '''Rebuild the coordinate and conversion tables based on drawing_area.rects.'''
         #i hate this
@@ -774,6 +813,23 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #drawing_area exists before finishing update_all()
         self.drawing_area.draw_all_rects()
         self.update_tables()
+    def update_data_from_item_change(self, table_item):
+        rect_index = table_item.row()
+        data_index = table_item.column()
+
+        rectangle = self.drawing_area.rects[rect_index][0]
+        current_coords = list(rectangle.getCoords())
+        current_coords[data_index] = int(table_item.text())
+        point_1 = QtCore.QPoint(current_coords[0], current_coords[1])
+        point_2 = QtCore.QPoint(current_coords[2], current_coords[3])
+        new_rect = QtCore.QRect(point_1, point_2)
+        self.drawing_area.rects[rect_index][0] = new_rect
+        self.drawing_area.draw_all_rects()
+
+        #Implementing undo would require the container-table separation
+        #since there seems to be no way to figure out what was there before
+        #the table would be updated, then we look to the associated indices in a hidden array...
+        #but that doesn't exist so no undo here
     def change_canvas_size(self):
         '''Change the size of the canvas to that specified in `canvas_width_edit` and
         `canvas_height_edit`.\n
@@ -884,6 +940,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #or fix the bad table updating function lol
         for row_number in range(0, self.table_widget.rowCount()):
             self.table_widget.setItem(row_number, self.table_widget.columnCount()-1, QtWidgets.QTableWidgetItem(""))
+        
+        #add to undo system
+        self.undo_queue.append(["add_custom_field"])
+        self.actionUndo.setText('Undo custom field add')
+        
         #i tried
         #self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-1).setText(new_field_name)
         #print(self.table_widget.columnCount())

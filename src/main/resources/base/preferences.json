@@ -1,7 +1,7 @@
 {
     "active_redraw": true,
     "active_coordinates": true,
-    "active_overlaps": false,
+    "active_overlaps": true,
     "check_overlaps": true,
     "crop_image": false,
     "stretch_image": false,
