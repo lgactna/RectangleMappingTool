@@ -48,9 +48,6 @@
 #endregion licensing
 
 #region imports
-
-#https://stackoverflow.com/questions/3615125/should-wildcard-import-be-avoided
-#will change to qualified imports later
 import sys
 import webbrowser
 import json
@@ -67,102 +64,12 @@ prefpath = appctxt.get_resource('preferences.json')
 default_prefpath = appctxt.get_resource('default.json')
 #endregion imports
 
-'''todo (vaguely in this order):
-        done - full settings implementation (logic)
-        done - clear field button
-        done - forced resize option (define custom canvas area, preload)
-        done - resize on image load (includes settings logic: crop if big, stretch if small, default otherwise)
-        done - resize logic post image load
-        done - try qdoublevalidator/qvalidator for the conversion handles
-        done - conversion table
-        done - qualify pyqt5 calls (not "from pyqt5.a import b, c, d" but "from pyqt5 import a, b, c, d" and use "a.aa" calls)
-        done - simple csv export
-        done - fstring export
-        done - "all" option on simple csv export
-        done - advanced csv export (old: custom ordering of csv with qlistwidget)
-        done - custom fields (but not the fact they get deleted, which is part of the table overhaul)
-        done - custom fstring identifiers
-        done - save image
-        done - update coordinate table upper-left labels on draw finish
-        ^excludes overlap functionality
-        done - highlight row on draw finish (because it already does that)
-        done - disable "change color" button if disabled (because color is now mandatory)
-        done - click row (or row element) to show rectangle info
-        done - right-click custom context menu
-        done - define behavior for changing custom colors (warn that custom colors will be discarded if colors are enabled and then disabled)
-
-        done - edit table values and update accordingly
-        done - csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
-        ^although it's really bad lol
-        make undo work to not just delete rectangles, but undo other actions (or drop entirely)
-        table validators/restrict editing
-        https://stackoverflow.com/questions/37621753/how-validate-a-cell-in-qtablewidget
-        docstring standards conformity
-        other pylint stuff (probably in a fork)
-
-        dropped = maybe sometime later
-
-        dropped - stop deleting data entered in custom fields on each table update
-        ^requires the rework where the table stops being the actual container instead of just a representation
-        dropped - fix overlap system such that the label is real-time updatable
-        ^this probably requires the logic-ui overhaul since overlap is calculated per-rectangle
-        ^i don't think it has any real value at the moment anyways
-        dropped - click row (or row element) to highlight associated rectangle in some way
-        ^start a timer that regularly changes the alpha on these rectangles, as rect[n][1] is a qcolor of rgba; change the a component
-        ^upon the row being changed, immediately force the alpha to be 255, loading from an array of the currently flashing rects
-
-        rewrite = when logic and ui are separated
-
-        really what ought to happen is the table SHOULD NOT be the actual container, but merely a user-viewable representation
-        even that would go a long way...
-
-        rewrite -- unbreak the overlap system (which doesn't even work correctly in its current state)
-        rewrite -- disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
-        rewrite -- unbreak the draw system (don't redraw every single element on each update)
-        rewrite -- unbreak the table system (use more and different signals)
-        
-
-        Note: eraseRect via QPainter erases the area *inside* the rectangle defined, same as filling a borderless rectangle with white;
-        as such, unbreaking the draw system might not be as reasonable as currently thought...
-'''
-
-'''undo actions: (format: action | [old_data])
-*note: fstring edit has its own undo handler, and will undo independently
-of a ctrl+z so long as the user is focused on that input box
-change-preference | [preference, value]
-change-table-data | [[row, column], value]
-add-custom-field | <NONE> (delete last implied)
-delete-rectangle | [[rectangle_object, <index in drawing_area.rects>],...]
-open-image | old_filepath
-change-individual-color | [[drawing_area.rects index, qcolor object], ...]
-draw-rectangle | <NONE> (delete last implied)
-change-conversion-handles | [x1,y1,x2,y2]
-
-change "rectangle object" to be an array of [rect_object, qcolor]?
-
-push each one of these to an array of n max length
-also make a setting of such
-don't add a preference change of the undo array length to the array itself
-so we can just avoid the issues that are associated with that lol
-'''
-
-#stylistic note: i've opted to use snake_case for most parts of this program
-#there are some things that remain camelCase, as it felt more natural for me to retain
-#Qt-like style - the custom signals are an example
-
-#also yes this program is in great need of a code review and refactoring
-#apparently a single python script handling both graphics and logic is :thonk:
-#https://softwareengineering.stackexchange.com/questions/127245/how-can-i-separate-the-user-interface-from-the-business-logic-while-still-mainta
-#gsearch: "separate business logic from ui"
-#https://softwareengineering.stackexchange.com/questions/336915/should-i-put-ui-and-logic-in-separate-classes
-#this will be done soontm in a different branch
-
 def get_prefs(source="user"):
-    '''Get `data` from either preferences.json or default.json.
+    """Get `data` from either preferences.json or default.json.
     `source` is a `str`, either `"user"` or `"default"`. The default is `"user"`.\n
     Using `"user"` returns the local preferences from preferences.json.
     Using `"default"` returns the default preferences from default.json.\n
-    Returns a standard Python dict.'''
+    Returns a standard Python dict."""
     if source == "user":
         pref_file = open(prefpath)
         data = json.load(pref_file)
@@ -175,15 +82,15 @@ def get_prefs(source="user"):
         return data
 
 def write_prefs(data):
-    '''Write `data` to preferences.json with 4-space indents.
-    `data` is a standard Python dict, likely the result of get_prefs().'''
+    """Write `data` to preferences.json with 4-space indents.
+    `data` is a standard Python dict, likely the result of get_prefs()."""
     pref_file = open(prefpath, "w+") #write and truncate
     pref_file.write(json.dumps(data, indent=4))
     pref_file.close()
 
 class CanvasArea(QtWidgets.QWidget):
-    '''The primary canvas on which the user draws rectangles.
-    Note that CanvasArea is referred to as "the canvas" across (most) docstrings and comments.'''
+    """The primary canvas on which the user draws rectangles.
+    Note that CanvasArea is referred to as "the canvas" across (most) docstrings and comments."""
     #these are custom signals that will not work if placed in __init__
     #they must be class variables/attributes declared here
     posChanged = QtCore.pyqtSignal(int, int)
@@ -222,27 +129,14 @@ class CanvasArea(QtWidgets.QWidget):
             "default_color": QtGui.QColor(0, 0, 255, 255)
         }
     def open_image(self, file_name):
-        '''Sets the image at `file_name` to be the canvas background.
-        It will then resize the canvas as needed and redraw rectangles.'''
+        """Sets the image at `file_name` to be the canvas background.
+        It will then resize the canvas as needed and redraw rectangles."""
         self.loaded_image_path = file_name
         self.calculate_sizes()
         self.draw_all_rects()
-        '''
-        loadedImage = QtGui.QImage()
-        if not loadedImage.load(file_name):
-            return False
-
-        #returns the maximum height and width given the two sizes
-        new_size = loadedImage.size().expandedTo(self.size())
-        #also see qsize.scale()
-        self.resize_image(loadedImage, new_size)
-        self.image = loadedImage
-        self.update()
-        return True
-        '''
 
     def calculate_sizes(self):
-        '''Determine what size the image should be, and if needed, resize the canvas.'''
+        """Determine what size the image should be, and if needed, resize the canvas."""
         image = QtGui.QImage()
         image.load(self.loaded_image_path)
 
@@ -265,9 +159,9 @@ class CanvasArea(QtWidgets.QWidget):
             self.loaded_image_size = image_size
 
     def save_image(self, file_name, file_format):
-        '''Save the canvas as the specified file name in the specified format.
+        """Save the canvas as the specified file name in the specified format.
         Also resize the final image based on the current canvas size - fixes
-        weird whitespace if a larger image was loaded before the current one.'''
+        weird whitespace if a larger image was loaded before the current one."""
         visible_image = self.image
 
         print(self.size())
@@ -295,13 +189,13 @@ class CanvasArea(QtWidgets.QWidget):
             return False
 
     def clear_image(self):
-        '''Clear the canvas.
-        In the future, this might be changed such that the opened image is drawn here.'''
+        """Clear the canvas.
+        In the future, this might be changed such that the opened image is drawn here."""
         self.image.fill(QtGui.qRgb(255, 255, 255))
         self.update()
 
     def undo_last(self):
-        '''Delete the most recent rectangle and redraw the canvas.'''
+        """Delete the most recent rectangle and redraw the canvas."""
         self.clear_image()
         del self.rects[-1]
         self.draw_all_rects()
@@ -309,18 +203,18 @@ class CanvasArea(QtWidgets.QWidget):
         #will be done as part of the more expansive undo rework
 
     def mousePressEvent(self, event): # pylint: disable=invalid-name
-        '''What happens when the user begins drawing a rectangle. Requires that
-        the left mouse button be clicked for a rectangle to be drawn.'''
+        """What happens when the user begins drawing a rectangle. Requires that
+        the left mouse button be clicked for a rectangle to be drawn."""
         if event.button() == QtCore.Qt.LeftButton:
             self.starting_point = event.pos()
             self.scribbling = True
             self.rectangleStarted.emit()
 
     def mouseMoveEvent(self, event): # pylint: disable=invalid-name
-        '''What happens when the user moves their mouse within the canvas area.
+        """What happens when the user moves their mouse within the canvas area.
         Always emits posChanged to update the cursor's current pixel position. If
         drawing a rectangle, update a real-time view of the rectangle and its coordinates
-        if enabled by the user.'''
+        if enabled by the user."""
         self.posChanged.emit(event.pos().x(), event.pos().y())
         if (event.buttons() & QtCore.Qt.LeftButton) and self.scribbling:
             if self.settings['active_redraw']:
@@ -331,8 +225,8 @@ class CanvasArea(QtWidgets.QWidget):
                 del self.rects[-1]
 
     def mouseReleaseEvent(self, event): # pylint: disable=invalid-name
-        '''What happens when the user stops drawing, releasing the left mouse button.
-        Adds the final rectangle (based on the point of mouse release) and redraws as necessary.'''
+        """What happens when the user stops drawing, releasing the left mouse button.
+        Adds the final rectangle (based on the point of mouse release) and redraws as necessary."""
         if event.button() == QtCore.Qt.LeftButton and self.scribbling:
             self.end_point = event.pos()
             self.scribbling = False
@@ -356,17 +250,7 @@ class CanvasArea(QtWidgets.QWidget):
         super(CanvasArea, self).resizeEvent(event)
 
     def draw_all_rects(self):
-        '''Redraw all rectangles, iterating over each rectangle object in self.rects.'''
-        ####
-        '''
-        is very inefficient because we don't just update the thing - no, we redraw *everything*
-        a better way of doing this (i believe) is to use QGraphicsView since we don't need to store (and redraw) elements - it's done for us
-
-        that said, i wasn't able to implement a proper rectangle deletion function properly without using this "array -> draw everything method" w/ QtGui.QPainter
-        it's also a good deal easier to mesh with the table widget and export it into a format i understand
-
-        so maybe one day i'll refactor this but for now this is good enough without absolutely shredding through resources
-        '''
+        """Redraw all rectangles, iterating over each rectangle object in self.rects."""
         self.clear_image()
         painter = QtGui.QPainter(self.image)
 
@@ -400,7 +284,7 @@ class CanvasArea(QtWidgets.QWidget):
         self.image = new_image
 
     def print_(self):
-        '''Handles canvas printing via QtPrintSupport.QPrintDialog.'''
+        """Handles canvas printing via QtPrintSupport.QPrintDialog."""
         printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.HighResolution)
 
         print_dialog = QtPrintSupport.QPrintDialog(printer, self)
@@ -419,20 +303,20 @@ class CanvasArea(QtWidgets.QWidget):
     #might just keep them for clarity
 
     def penColor(self): # pylint: disable=invalid-name
-        '''Returns the default current pen color.'''
+        """Returns the default current pen color."""
         return self.settings['default_color']
 
     def penWidth(self):  # pylint: disable=invalid-name
-        '''Returns the current default pen width.'''
+        """Returns the current default pen width."""
         return self.settings['default_width']
 
     #probably same with these
     def set_pen_color(self, new_color):
-        '''Set a new default pen color for the canvas.'''
+        """Set a new default pen color for the canvas."""
         self.settings['default_color'] = new_color
 
     def set_pen_width(self, new_width):
-        '''Set a new default pen width for the canvas.'''
+        """Set a new default pen width for the canvas."""
         self.settings['default_width'] = new_width
 
 class TableCoordinateDelegate(QtWidgets.QItemDelegate):
@@ -447,25 +331,11 @@ class TableCoordinateDelegate(QtWidgets.QItemDelegate):
         return spinbox
 
 class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    '''The main window. Instantiated once.'''
+    """The main window. Instantiated once."""
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         self.setupUi(self)
         self.setWindowTitle("RectangleMappingTool")
-        '''
-        See https://stackoverflow.com/questions/35185113/configure-qtwidgets.qwidget-to-fill-parent-via-layouts.
-        this appears to be the same issue in which this new widget is initialized to a 100px by 25px area
-        so we create a new grid layout and place drawing_area into it
-        this also affords us some flexibility if we ever want to hide drawing_area and place something different in container_left
-        ---
-        in order for a qscrollarea to work, the child (here self.scrollAreaWidgetContents) must have its own layout
-        however, obviously a layout will auto-resize elements inside it
-        so in order to account for this, we will manually set the minimum size of the newly-created drawing area
-        thus forcing it to be that size and give us the scroll bars
-        the above is what i understood from a bunch of qt forum and stackoverflow posts
-        although the docs say that a standard resize() will be respected
-        i could not get it to do that
-        '''
         #region Canvas initialization
         #I decided to not rename "drawing_area" to "canvas_area" for clarity reasons
         #there is no difference between "canvas_area" and "CanvasArea" when set out loud
@@ -603,11 +473,6 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.custom_column_headers = []
         self.undo_queue = []
-        '''
-        self.flash_timer = QtCore.QTimer()
-        self.flash_timer.start(1000)
-        self.flash_timer.timeout.connect(self.flash_selected)
-        '''
         #endregion
 
         #region All other initialization
@@ -616,9 +481,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #you know, something tells me this should not have a billion methods
 
     def change_preference(self, preference, value):
-        '''Change `preference` to `value` and perform additional actions as necessary.
+        """Change `preference` to `value` and perform additional actions as necessary.
         This includes updating preferences.json.\n
-        For more information, please see the README.'''
+        For more information, please see the README."""
         #https://stackoverflow.com/questions/8381735/how-to-toggle-a-value-in-python
         self.settings[preference] = value
 
@@ -651,9 +516,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         write_prefs(self.settings)
     def load_from_prefs(self):
-        '''Update self.settings based on values read from preferences.json.
+        """Update self.settings based on values read from preferences.json.
         Remove if the __init__ call becomes the only call.
-        Also updates UI elements as needed to reflect these.'''
+        Also updates UI elements as needed to reflect these."""
         self.settings = get_prefs()
 
         for i in self.drawing_area.settings:
@@ -698,22 +563,22 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #and finally update the canvas and table(s) as required
         self.update_all()
     def reset_prefs(self):
-        '''Set the user preference file (preferences.json) to the defaults.
+        """Set the user preference file (preferences.json) to the defaults.
         This is achieved by getting the contents of defaults.json and writing it to the user's preference file.
         It will also call `load_from_prefs()` to deal with necessary post-processing.
-        Also calls `reset_prompt()` to warn the user of a potentially destructive action.'''
+        Also calls `reset_prompt()` to warn the user of a potentially destructive action."""
         if self.reset_prompt():
             default_prefs = get_prefs("default")
             write_prefs(default_prefs)
             self.load_from_prefs()
     def update_on_rect_start(self):
-        '''Holds things that should be done when a rectangle is started.
-        It is likely to play a larger role when this program is rewritten.'''
+        """Holds things that should be done when a rectangle is started.
+        It is likely to play a larger role when this program is rewritten."""
         #things to do when a rectangle is started
         self.table_widget.itemChanged.disconnect(self.update_data_from_item_change)
     def update_on_rect_finish(self):
-        '''Holds things that should be done when a rectangle is finished.
-        It is likely to play a larger role when this program is rewritten.'''
+        """Holds things that should be done when a rectangle is finished.
+        It is likely to play a larger role when this program is rewritten."""
         #things to do when a rectangle is finished.
         #on rework, this should really be the major function.
         self.table_widget.itemChanged.connect(self.update_data_from_item_change)
@@ -721,7 +586,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.undo_queue.append(["draw_rectangle"])
         self.actionUndo.setText('Undo rectangle draw')
     def update_tables(self):
-        '''Rebuild the coordinate and conversion tables based on drawing_area.rects.'''
+        """Rebuild the coordinate and conversion tables based on drawing_area.rects."""
         #i hate this
         #but i want to finish other functionality before turning to efficiency changes so here we are
         #takes up to 40% cpu!! actual garbage
@@ -826,11 +691,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.converted_table_widget.setItem(row_number, 2, QtWidgets.QTableWidgetItem(str(x2_equiv)))
                 self.converted_table_widget.setItem(row_number, 3, QtWidgets.QTableWidgetItem(str(y2_equiv)))
     def update_all(self):
-        '''Shorthand call to redraw all rectangles and reprocess the coordinate table.\n
+        """Shorthand call to redraw all rectangles and reprocess the coordinate table.\n
         Might need to be updated with the conversion table in the future.
         Since the color field is planned to say "Default" when using to the default pen color\n
         (as opposed to explicitly defining the rgba value), these "default-colored" rectangles
-        should immediately reflect changes to the default pen color.'''
+        should immediately reflect changes to the default pen color."""
         #calling draw_all_rects during initialization throws some errors
         #QPainter::begin: Paint device returned engine == 0, type: 3
         #QPainter::setPen: Painter not active
@@ -839,10 +704,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.drawing_area.draw_all_rects()
         self.update_tables()
     def update_data_from_item_change(self, table_item):
-        '''When the user edits a coordinate point in the table, update the canvas to reflect
+        """When the user edits a coordinate point in the table, update the canvas to reflect
         the change. Ignores any edits past the fourth column (the last coordinate column).\n
         Note that this is called even for programmatic edits - thus, recolors and changes to
-        the overlap count will normally cause this to execute.'''
+        the overlap count will normally cause this to execute."""
         rect_index = table_item.row()
         data_index = table_item.column()
 
@@ -863,12 +728,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #the table would be updated, then we look to the associated indices in a hidden array...
         #but that doesn't exist so no undo here
     def change_canvas_size(self):
-        '''Change the size of the canvas to that specified in `canvas_width_edit` and
+        """Change the size of the canvas to that specified in `canvas_width_edit` and
         `canvas_height_edit`.\n
         Note that image-canvas maniuplation is not actually done here - they are done
         in CanvasArea itself. This means the `crop_image` and `stretch_image` settings
         have no effect here.\n
-        The conversion labels are also updated here, as well.'''
+        The conversion labels are also updated here, as well."""
         new_width = int(self.canvas_width_edit.text())
         new_height = int(self.canvas_height_edit.text())
         new_size = QtCore.QSize(new_width, new_height)
@@ -876,9 +741,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conv_x2_label.setText("Bottom-right, x (x = %s px)"%new_width)
         self.conv_y2_label.setText("Bottom-right, y (y = %s px)"%new_height)
     def update_size_text(self):
-        '''Update UI text to reflect the current size of the canvas.\n
+        """Update UI text to reflect the current size of the canvas.\n
         This includes the canvas size QLineEdits on the Settings tab and the
-        conversion labels on the Conversion tab.'''
+        conversion labels on the Conversion tab."""
         width = str(self.drawing_area.size().width())
         height = str(self.drawing_area.size().height())
         self.canvas_width_edit.setText(width)
@@ -886,22 +751,22 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conv_x2_label.setText("Bottom-right, x (x = %s px)"%width)
         self.conv_y2_label.setText("Bottom-right, y (y = %s px)"%height)
     def clear_all(self):
-        '''Clear all data (after warning the user).'''
+        """Clear all data (after warning the user)."""
         if self.clear_prompt():
             self.drawing_area.rects = []
             self.update_all()
     def remove_last(self):
-        '''Remove the most recently added row.'''
+        """Remove the most recently added row."""
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
     def update_coords(self, x_pos, y_pos):
-        '''Update the coordinate labels below the canvas.'''
+        """Update the coordinate labels below the canvas."""
         self.coord_label.setText("x:"+str(x_pos)+" y:"+str(y_pos))
     def set_conversion_values(self):
-        '''Validate the entered conversion values/handles.
+        """Validate the entered conversion values/handles.
         If valid, set these handles to self.conversion_values.\n
         Valid handles must be convertible into floats by Python
         and 2nd handles must always be greater than the 1st handles
-        of their respective axes.'''
+        of their respective axes."""
         #validation
         try:
             #ideally I would've done self.formLayout.findChildren
@@ -954,9 +819,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.conversion_values['y2'] = float(self.conv_y2_edit.text())
         self.update_tables()
     def add_custom_field(self):
-        '''Prompt the user for the name of a new field, where they can enter custom data for export.
+        """Prompt the user for the name of a new field, where they can enter custom data for export.
         As of right now, update_tables() will overwrite existing data in these columns. Use
-        is strongly discouraged - write to a CSV and add your new data there instead.'''
+        is strongly discouraged - write to a CSV and add your new data there instead."""
         #add handling for blank responses...
         new_field_name, response = QtWidgets.QInputDialog.getText(self, "Add new custom field",
                                                   "Custom field name:")
@@ -985,8 +850,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #print(self.table_widget.columnCount())
         #print(self.table_widget.horizontalHeaderItem(self.table_widget.columnCount()-2).text())
     def show_table_menu(self, pos):
-        '''Holds the custom context menu when the user right-clicks on the coordinate table.
-        Here, the user can delete or recolor the currently selected rows/rectangles.'''
+        """Holds the custom context menu when the user right-clicks on the coordinate table.
+        Here, the user can delete or recolor the currently selected rows/rectangles."""
         #https://stackoverflow.com/questions/36614635/pyqt-right-click-menu-for-qcombobox
         menu = QtWidgets.QMenu()
         delete_action = menu.addAction("Delete", self.delete_selected_rectangles)
@@ -999,7 +864,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #"where is <pos>'s position in table_widget relative to the global screen?"
         action = menu.exec_(self.table_widget.mapToGlobal(pos))
     def get_selected_rows(self):
-        '''Returns a list containing the rows currently selected by the user.'''
+        """Returns a list containing the rows currently selected by the user."""
         #return selected rows
         #https://stackoverflow.com/questions/5927499/how-to-get-selected-rows-in-qtableview
         #print(row, column)
@@ -1011,11 +876,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 selected_rows.append(item.row())
         return selected_rows
     def delete_selected_rectangles(self):
-        '''Deletes the rectangles currently selected on the table.'''
+        """Deletes the rectangles currently selected on the table."""
         selected = self.get_selected_rows()
         self.delete_rows(selected)
     def delete_rows(self, rows):
-        '''Delete `rows` (`list`) from the table and their respective rectangles on the canvas.'''
+        """Delete `rows` (`list`) from the table and their respective rectangles on the canvas."""
         #https://stackoverflow.com/questions/3940128/how-can-i-reverse-a-list-in-python
         #work from most recent to least recent to prevent conflicts
         for row_index in reversed(rows):
@@ -1024,16 +889,16 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             del self.drawing_area.rects[row_index]
         self.drawing_area.draw_all_rects()
     def update_rect_labels_active(self, temp_rect):
-        '''Update the upper-left labels above the table to reflect the coordinates of a 
-        rectangle currently being drawn, `temp_rect`, which is a QRect object.'''
+        """Update the upper-left labels above the table to reflect the coordinates of a 
+        rectangle currently being drawn, `temp_rect`, which is a QRect object."""
         coords = temp_rect.getCoords()
         number = self.table_widget.rowCount() + 1
         self.current_selected_label.setText("Currently drawing rectangle %s"%number)
         self.current_coordinates_label.setText(f"Coordinates: {coords[0]}, {coords[1]}, {coords[2]}, {coords[3]}")
         self.current_overlaps_label.setText("")
     def update_rect_labels(self):
-        '''On row selection change, update the upper-left labels to reflect what the user
-        currently has selected. Also modifies buttons if necessary.'''
+        """On row selection change, update the upper-left labels to reflect what the user
+        currently has selected. Also modifies buttons if necessary."""
         selected = self.get_selected_rows()
         self.delete_rect_button.setEnabled(True)
         self.change_rect_color_button.setEnabled(True)
@@ -1059,16 +924,16 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.current_coordinates_label.clear()
             self.current_overlaps_label.clear()
     def flash_selected(self):
-        '''Would have flashed the currently selected rectangle (based on table row selection)
-        by starting a QTimer and toggling that rectangle's alpha value.'''
+        """Would have flashed the currently selected rectangle (based on table row selection)
+        by starting a QTimer and toggling that rectangle's alpha value."""
         #method 1: flash by enlarging rectangle
         #method 2: flash by changing color
         #method 3: flash by hiding and then not
         #maybe later - it's introducing too much complexity for such a minor feature
         pass
     def update_csv_export_text(self, button):
-        '''Called when a button in self.radio_group is clicked, passing in the clicked button
-        `button`. Based on this button's text, update the description label below the radio buttons.'''
+        """Called when a button in self.radio_group is clicked, passing in the clicked button
+        `button`. Based on this button's text, update the description label below the radio buttons."""
         if button.text() == "Raw coordinates":
             self.selection_label.setText("Raw coordinates: Export the raw pixel-based coordinates of the rectangles in the format x1, y1, x2, y2.")
         elif button.text() == "Converted coordinates":
@@ -1078,11 +943,11 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif button.text() == "All":
             self.selection_label.setText("All: Export every valid field, including custom fields, color, and overlaps if enabled in the format raw coordinates, other fields, converted coordinates.")
     def simple_csv_export(self):
-        '''Export coordinate and/or converted point data, based on radio button selection.
+        """Export coordinate and/or converted point data, based on radio button selection.
         If the user needs other fields or reordering, they will need to use the advanced
         export option.\n
         In addition, if the user has not defined coordinate handles, they will be unable to
-        export data on either converted or both mode. Throw a message box as a result.'''
+        export data on either converted or both mode. Throw a message box as a result."""
         header_column = []
         data = []
         #get radio button state here and update the exports as necessary
@@ -1165,15 +1030,15 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
     def advanced_csv_export(self):
-        '''Open the advanced CSV export window via an instance of `AdvancedExportWindow`.
+        """Open the advanced CSV export window via an instance of `AdvancedExportWindow`.
         There is no additional logic in this function since the window is application-modal
-        and handles all needed functionality.'''
+        and handles all needed functionality."""
         self.export_window = AdvancedExportWindow(self.get_column_headers(), self.table_widget, self.converted_table_widget)
         self.export_window.show()
     def csv_import(self):
-        '''Import coordinates and colors from a CSV file of the format
+        """Import coordinates and colors from a CSV file of the format
         x1, y1, x2, y2, <any>, color, ...\n
-        Any fields after color are ignored.'''
+        Any fields after color are ignored."""
         QtWidgets.QMessageBox.information(self, "Import information",
                                         'Click <a href="https://github.com/aacttelemetry">here</a>'
                                         ' for more information on importing.',
@@ -1187,9 +1052,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if file_name:
             if self.drawing_area.rects:
                 response = QtWidgets.QMessageBox.question(self, "Reset drawing area and import?",
-                                                        'Importing new coordinates will reset the canvas! Do you '
-                                                        'want to import coordinates from a CSV file anyways?',
-                                                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                        'Importing new coordinates will reset the canvas! Do you want to import' 
+                        'coordinates from a CSV file anyways?',
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
                 if response == QtWidgets.QMessageBox.No:
                     #closing the window also seems to return this
                     return None
@@ -1217,10 +1082,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
     def get_column_headers(self):
-        '''Standalone function for getting the available variables for an
+        """Standalone function for getting the available variables for an
         export. Returns a list containing the (names of) valid column headers,
         each element a `str` containing the name of the column header.\n
-        Note that this *does not* return the objects themselves.'''
+        Note that this *does not* return the objects themselves."""
         available_vars = []
         for column_number in range(0, self.table_widget.columnCount()):
             header_name = self.table_widget.horizontalHeaderItem(column_number).text()
@@ -1233,8 +1098,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #return var_string
         return available_vars
     def update_inline_valid_vars(self, index):
-        '''Update `vars_label` with the current valid column headers based on
-        the value returned from `get_column_headers()`.'''
+        """Update `vars_label` with the current valid column headers based on
+        the value returned from `get_column_headers()`."""
         #https://stackoverflow.com/questions/44471380/surround-strings-in-an-array-with-a-certain-character
         #for surrounding each element
         if index == 2:
@@ -1245,9 +1110,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             vars = ', '.join([str(left_id+item+right_id) for item in self.get_column_headers()])
             self.vars_label.setText("Available variables: "+vars)
     def fstring_export(self):
-        '''Using the data currently contained in the inline editor, interpret the data
+        """Using the data currently contained in the inline editor, interpret the data
         as if it were a Python f-string for each rectangle row (newline separated).
-        Export the result to a .txt file specified by the user.'''
+        Export the result to a .txt file specified by the user."""
         #In reality, this function uses two identifying characters to replace variables.
         #An f-string-like format appeared to be the most natural way to ask the user where
         #to put column data.
@@ -1321,10 +1186,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #It wouldn't be too hard to turn this into a buffer and write each time it gets
         #too big or something, though.
     def fstring_export_old(self):
-        '''This was the old fstring_export function before it was reworked
+        """This was the old fstring_export function before it was reworked
         to actually work (and avoid exec/eval in the process).
         
-        It is kept here for reference.'''
+        It is kept here for reference."""
         #With regards to the potentialy security issue above, this is not much different from
         #a user just having a standard Python interpreter available to them. Everything is local,
         #so there's no fear of damaging an external system or something - it will stay as-is for now.
@@ -1368,17 +1233,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #for updating the label:
         #see https://stackoverflow.com/questions/44778/how-would-you-make-a-comma-separated-string-from-a-list-of-strings
     def new_fstring_window(self):
-        '''Open a new window composed of only a text editor and a button. This allows the
-        user to more easily write an f-string if the inline editor is too small.'''
+        """Open a new window composed of only a text editor and a button. This allows the
+        user to more easily write an f-string if the inline editor is too small."""
         new_text = StringDialog.launch(self.fstring_edit.toPlainText(),self.vars_label.text())
         self.fstring_edit.setPlainText(new_text)
     def undo_new(self, action):
-        '''What should be the more encompassing undo function.'''
+        """What should be the more encompassing undo function."""
         pass
     def open_image(self):
-        '''Handles opening an image.
+        """Handles opening an image.
         This includes the creation of a QtWidgets.QFileDialog and determining if an image is valid.
-        It will also ask the user if they want to clear the canvas on image load.'''
+        It will also ask the user if they want to clear the canvas on image load."""
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File",
                                                    QtCore.QDir.currentPath())
         if file_name:
@@ -1398,8 +1263,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.drawing_area.open_image(file_name)
                 #at this point, we should execute the resize logic
     def save_file(self):
-        '''Save the current contents of the canvas to an image of the user's
-        desired image format.'''
+        """Save the current contents of the canvas to an image of the user's
+        desired image format."""
         initialPath = QtCore.QDir.currentPath() + '/untitled'
 
         #QImageWriter is used here for determining saveable file formats
@@ -1425,14 +1290,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         return False #return none??
     def undo(self):
-        '''Tell the canvas to remove the most recent rectangle.
-        Also updates the coordinate table.'''
+        """Tell the canvas to remove the most recent rectangle.
+        Also updates the coordinate table."""
         self.drawing_area.undo_last()
         #delete most recent table entry on undo
         self.table_widget.removeRow(self.table_widget.rowCount()-1)
     def toggle_conversion_info(self):
-        '''Toggle the visibility of the big block of text above the
-        conversion table.'''
+        """Toggle the visibility of the big block of text above the
+        conversion table."""
         if self.conversion_groupbox.isVisible():
             self.conversion_groupbox.setVisible(False)
             self.toggle_show_conv_button.setArrowType(QtCore.Qt.DownArrow)
@@ -1440,10 +1305,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.conversion_groupbox.setVisible(True)
             self.toggle_show_conv_button.setArrowType(QtCore.Qt.UpArrow)
     def change_default_pen_color(self):
-        '''Open a dialog allowing the user to change the default rectangle color.
+        """Open a dialog allowing the user to change the default rectangle color.
         Also prompts the user on whether or not they'd like rectangles with a color of
         "Default" to remain the old default color - converting the table fields to rgb -
-        or use the newly-defined default color.'''
+        or use the newly-defined default color."""
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         if new_color.isValid():
             response = QtWidgets.QMessageBox.question(self, "Recolor default-colored rectangles?",
@@ -1466,8 +1331,8 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.change_preference('default_color', list(new_color.getRgb()))
             self.update_all()
     def recolor_selected_rectangles(self):
-        '''Recolor the rectangles reflected by the rows currently selected in the coordinate
-        table.'''
+        """Recolor the rectangles reflected by the rows currently selected in the coordinate
+        table."""
         rows = self.get_selected_rows()
         new_color = QtWidgets.QColorDialog.getColor(self.drawing_area.penColor())
         print(new_color)
@@ -1476,7 +1341,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.drawing_area.rects[rect_index][1] = new_color
             self.update_all()
     def change_pen_width(self):
-        '''Open a dialog allowing the user to change the default rectangle width.'''
+        """Open a dialog allowing the user to change the default rectangle width."""
         new_width, response = QtWidgets.QInputDialog.getInt(self, "Set New Pen Width",
                                                   "Select pen width:",
                                                   self.drawing_area.penWidth(), 1, 50, 1)
@@ -1485,7 +1350,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.change_preference('default_width', new_width)
             self.update_all()
     def about(self):
-        '''Opens this program's about dialog.'''
+        """Opens this program's about dialog."""
         QtWidgets.QMessageBox.about(self, "About RectangleMappingTool",
                 '<p>RectangleMappingTool is a program designed for the '
                 '<a href="https://github.com/aacttelemetry">AACT Telemetry project</a>, '
@@ -1495,12 +1360,12 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 '<p>You can view the source of this program and additional information '
                 '<a href="https://github.com/aacttelemetry/RectangleMappingTool">here</a>.</p>')
     def open_github(self):
-        '''Opens this program's repo in the user's default browser.'''
+        """Opens this program's repo in the user's default browser."""
         webbrowser.open("https://github.com/aacttelemetry/RectangleMappingTool")
     def reset_prompt(self):
-        '''Warns the user that they are about to reset the program's settings to their defaults.
+        """Warns the user that they are about to reset the program's settings to their defaults.
         Returns `True` if "Reset" is selected.
-        Returns `False` otherwise.'''
+        Returns `False` otherwise."""
         ret = QtWidgets.QMessageBox.warning(self, "Reset preferences?",
                                           'Are you sure you want to reset your preferences to the default preferences?',
                                           QtWidgets.QMessageBox.Reset | QtWidgets.QMessageBox.Cancel)
@@ -1509,9 +1374,9 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif ret == QtWidgets.QMessageBox.Cancel:
             return False
     def clear_prompt(self):
-        '''Warns the user that they are about to clear all data.
+        """Warns the user that they are about to clear all data.
         Returns `True` if "Yes" is selected.
-        Returns `False` otherwise.'''
+        Returns `False` otherwise."""
         ret = QtWidgets.QMessageBox.warning(self, "Clear all data?",
                                           'Are you sure you want to clear all data?\n'
                                           'This will delete all table entries and drawn rectangles.',
@@ -1523,10 +1388,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif ret == QtWidgets.QMessageBox.Cancel:
             return False
     def close_prompt(self):
-        '''Warns the user if the canvas has been modified.
+        """Warns the user if the canvas has been modified.
         This is determined by the presence of any rectangles.
         Returns True if the user wants to close the program anyways or no rectangles have been drawn.
-        Returns False otherwise.'''
+        Returns False otherwise."""
         #because "saving" could mean anything from exporting the coords to saving the image
         #there is no handling of saving here
         #a modified drawing_area is one that has any rectangles whatsoever
@@ -1545,17 +1410,17 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             return True
     def closeEvent(self, event): # pylint: disable=invalid-name
-        '''Reimplementation of the close event to warn the user on program close.
-        See close_prompt().'''
+        """Reimplementation of the close event to warn the user on program close.
+        See close_prompt()."""
         if self.close_prompt():
             event.accept()
         else:
             event.ignore()
 
 class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
-    '''Opens the advanced CSV export window, where the user is able to reorder and change
+    """Opens the advanced CSV export window, where the user is able to reorder and change
     what fields are exported. Includes a raw CSV preview as well as a table preview of
-    the results.'''
+    the results."""
     def __init__(self, available_vars, main_table, conv_table):
         super().__init__()
         #keep the user from messing with existing data without exiting
@@ -1599,10 +1464,10 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             'y2_conv':'The converted y-coordinate of the bottom-right point of a rectangle.',
         }
     def update_descriptions(self, list_item):
-        '''Update the current item description and name based on the text of the list item
+        """Update the current item description and name based on the text of the list item
         clicked. Called when a list item in either `QTableWidget` is clicked.\n
         All descriptions are based on `self.descriptions` - custom fields will not be in
-        this dict, and thus will result in a description of "Custom field."'''
+        this dict, and thus will result in a description of 'Custom field.'"""
         name = list_item.text()
         if name in self.descriptions:
             self.selected_field_label.setText(name)
@@ -1611,11 +1476,11 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             self.selected_field_label.setText(name)
             self.selected_info_label.setText("Custom field.")
     def calculate_data(self, is_preview):
-        '''Calculate the export data in a manner very similar to the main window's
+        """Calculate the export data in a manner very similar to the main window's
         `simple_csv_export()`. However, this function adds `is_preview`, a `bool`
         that determines whether or not to calculate data to up to 5 rows or all rows.\n
         This is based on `self.selected_fields`, where the user will have already
-        defined the order and selection of the fields they'd like to use.'''
+        defined the order and selection of the fields they'd like to use."""
         #determine if data from the conversion table is involved
         #if so, split the available variables into two lists via slicing
         if self.available_vars[-1] == "y2_conv":
@@ -1689,9 +1554,9 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             return None
         return [export_headers, data]
     def export_values(self):
-        '''Prompt the user for a filepath and save the results of a non-preview
+        """Prompt the user for a filepath and save the results of a non-preview
         `self.calculate_data()` call to that CSV file, creating it if it does
-        not already exist. Called when the "Export to .csv" button is clicked.'''
+        not already exist. Called when the "Export to .csv" button is clicked."""
         data = self.calculate_data(False)
 
         if not data:
@@ -1721,9 +1586,9 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
                                      "<p>Error:</p><p>%s</p>"%e,
                                      QtWidgets.QMessageBox.Ok)
     def update_previews(self):
-        '''Update a table-based and text-based preview of the CSV data.
+        """Update a table-based and text-based preview of the CSV data.
         Called whenever the list items change (after a 10ms delay - see
-        comments above the related signal connections).'''
+        comments above the related signal connections)."""
         #i really don't know any other "easy" way to update this table
         #we could add handlers for each possible event - moves, additions, removals - 
         #but that's effort and too inflexible
@@ -1757,11 +1622,11 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
         self.sample_output_raw.setPlainText(full)
         
 class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
-    '''Opens a new dialog for f-string editing. Also provides the user
+    """Opens a new dialog for f-string editing. Also provides the user
     with extra information on how f-strings work. Application modal.\n
     Intended to be called with `StringDialog.launch()`, which requires
     the parameters `current_text` - the text of the inline editor - and
-    `available_vars` - a list of the usable column names.'''
+    `available_vars` - a list of the usable column names."""
     #see this link for returning values from a dialog as if it were a normal function
     #https://stackoverflow.com/questions/37411750/pyqt-qdialog-return-response-yes-or-no
     def __init__(self):
@@ -1784,8 +1649,8 @@ class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
         return None
 
 class AppContext(ApplicationContext):
-    '''fbs requires that one instance of ApplicationContext be instantiated.
-    This represents the app window.'''
+    """fbs requires that one instance of ApplicationContext be instantiated.
+    This represents the app window."""
     def run(self):
         application_window = ApplicationWindow()
         application_window.show()
