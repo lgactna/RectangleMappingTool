@@ -840,11 +840,14 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.update_tables()
     def update_data_from_item_change(self, table_item):
         '''When the user edits a coordinate point in the table, update the canvas to reflect
-        the change. Currently throws an error if the user edits anything other than the first
-        four columns, but has no lasting effects (as the invalid value is overwritten on the next
-        update).'''
+        the change. Ignores any edits past the fourth column (the last coordinate column).\n
+        Note that this is called even for programmatic edits - thus, recolors and changes to
+        the overlap count will normally cause this to execute.'''
         rect_index = table_item.row()
         data_index = table_item.column()
+
+        if data_index > 3:
+            return None
 
         rectangle = self.drawing_area.rects[rect_index][0]
         current_coords = list(rectangle.getCoords())
