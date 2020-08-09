@@ -920,13 +920,15 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             #this makes sure that the rectangle and its handles are in the right direction
             #from testing it seems that the lineedits are always returned from findChildren in the same order
             #so this *should* always work
-            if values[0] > values[2] or values[1] > values[3]:
-                raise ValueError
+            #if values[0] > values[2] or values[1] > values[3]:
+            #    raise ValueError
+            #note: the above was changed right before 0.2, where abs() was used to calculate a ratio instead
+            #because really x1 > x2 won't always be the case
             #print("rectangle validation was ok")
             #check if aspect ratio was preserved
             canvas_ratio = self.drawing_area.size().height()/self.drawing_area.size().width()
             try:
-                conv_ratio = (values[3]-values[1])/(values[2]-values[0])
+                conv_ratio = abs(values[3]-values[1])/abs(values[2]-values[0])
             except ZeroDivisionError:
                 conv_ratio = 0.0
             #chances are that nobody will ever have the exact same ratio as the canvas
@@ -941,7 +943,7 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QMessageBox.critical(self, "Invalid value entered",
                                           '<p>At least one conversion handle is invalid. This typically means:</p>'
                                           '<ul><li>a number could not be converted to a floating-point number by Python, or</li>\n'
-                                          '<li>the second handle of either axis is less than the first handle.\n</li></ul>'
+                                          '<li>a strange unforseeable problem has occurred\n</li></ul>'
                                           '<p>Ensure that you have entered the correct values. Note that '
                                           'empty values will be implicitly converted to 0.</p>'
                                           '<p>E notation is valid in the format &lt;float&gt;e&lt;int&gt;.</p>',
