@@ -191,7 +191,7 @@ You can define a variety of settings that (may or may not) improve performance a
   - By default, if the canvas is smaller than the image loaded, the canvas will grow to the size of the loaded image. You can change it so that the larger loaded image will be cropped, anchored to the top-left; the size of the canvas will not change.
     - Note that this means you cannot easily "downsize" an image while preserving aspect ratio using RMT.
 
-Finally, you can reset the above settings to the internal default. These settings are defined in [default.json](src\main\resources\base\default.json).
+Finally, you can reset the above settings to the internal default. These settings are defined in [default.json](src/main/resources/base/default.json).
 
 Defaults:
 - Redraw rectangles in real time.
