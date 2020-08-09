@@ -66,6 +66,7 @@ default_prefpath = appctxt.get_resource('default.json')
 
 def get_prefs(source="user"):
     """Get `data` from either preferences.json or default.json.
+
     `source` is a `str`, either `"user"` or `"default"`. The default is `"user"`.\n
     Using `"user"` returns the local preferences from preferences.json.
     Using `"default"` returns the default preferences from default.json.\n
@@ -1621,7 +1622,7 @@ class AdvancedExportWindow(QtWidgets.QMainWindow,Ui_AdvExportWindow):
             full += ','.join([str(item) for item in row])+"\n"
         self.sample_output_raw.setPlainText(full)
         
-class StringDialog(QtWidgets.QDialog,Ui_StringDialog):
+class StringDialog(QtWidgets.QDialog, Ui_StringDialog):
     """Opens a new dialog for f-string editing. Also provides the user
     with extra information on how f-strings work. Application modal.\n
     Intended to be called with `StringDialog.launch()`, which requires
