@@ -64,7 +64,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -209,7 +209,7 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>451</width>
+            <width>599</width>
             <height>16777215</height>
            </size>
           </property>

@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.conversion_groupbox.sizePolicy().hasHeightForWidth())
         self.conversion_groupbox.setSizePolicy(sizePolicy)
-        self.conversion_groupbox.setMaximumSize(QtCore.QSize(451, 16777215))
+        self.conversion_groupbox.setMaximumSize(QtCore.QSize(599, 16777215))
         self.conversion_groupbox.setStyleSheet("QGroupBox {border: none}")
         self.conversion_groupbox.setTitle("")
         self.conversion_groupbox.setFlat(True)
@@ -532,7 +532,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
