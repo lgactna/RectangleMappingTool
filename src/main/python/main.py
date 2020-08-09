@@ -92,7 +92,8 @@ default_prefpath = appctxt.get_resource('default.json')
         done - define behavior for changing custom colors (warn that custom colors will be discarded if colors are enabled and then disabled)
 
         done - edit table values and update accordingly
-        csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
+        done - csv import (data must be ordered x1, y1, x2, y2, custom fields, ..., converted values.)
+        ^although it's really bad lol
         make undo work to not just delete rectangles, but undo other actions (or drop entirely)
         table validators/restrict editing
         https://stackoverflow.com/questions/37621753/how-validate-a-cell-in-qtablewidget
@@ -113,6 +114,7 @@ default_prefpath = appctxt.get_resource('default.json')
         rewrite = when logic and ui are separated
 
         really what ought to happen is the table SHOULD NOT be the actual container, but merely a user-viewable representation
+        even that would go a long way...
 
         rewrite -- unbreak the overlap system (which doesn't even work correctly in its current state)
         rewrite -- disable live overlap calculation in table if live table is disabled (which really just means fix the overlap system)
@@ -433,6 +435,17 @@ class CanvasArea(QtWidgets.QWidget):
         '''Set a new default pen width for the canvas.'''
         self.settings['default_width'] = new_width
 
+class TableCoordinateDelegate(QtWidgets.QItemDelegate):
+    #https://stackoverflow.com/questions/37621753/how-validate-a-cell-in-qtablewidget
+    #https://forum.qt.io/topic/81918/qtableview-cell-validation-specific-validator-for-a-column/3
+    def createEditor(self, parent, option, index):
+        spinbox = QtWidgets.QSpinBox(parent)
+        #i see many spaghetti coming from this
+        #but also i seriously doubt there will be need for 2 billion pixels...
+        spinbox.setMaximum(2147483647)
+        spinbox.setMinimum(-2147483648)
+        return spinbox
+
 class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     '''The main window. Instantiated once.'''
     def __init__(self):
@@ -490,6 +503,10 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         #endregion
 
         #region Tab 1: Coordinate Table
+        #accept only ints; see tabledelgate definition
+        delegate = TableCoordinateDelegate()
+        for i in range(0, 4):
+            self.table_widget.setItemDelegateForColumn(i, delegate)
         self.add_custom_button.clicked.connect(self.add_custom_field)
         #below is set in the ui file already
         #self.table_widget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -754,20 +771,27 @@ class ApplicationWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     if intersects:
                         if current == "":
                             #print(f"Added {rect2_index+1} to {rect1_index+1}")
-                            self.table_widget.setItem(rect1_index, 4,
-                                                      QtWidgets.QTableWidgetItem(str(rect2_index+1)))
+                            self.table_widget.item(rect1_index, 4).setText(str(rect2_index+1))
                         else:
                             #print(f"Added {rect2_index+1} to {rect1_index+1}")
-                            self.table_widget.setItem(rect1_index, 4,
-                                                      QtWidgets.QTableWidgetItem(current+","+str(rect2_index+1)))
+                            self.table_widget.item(rect1_index, 4).setText(current+","+str(rect2_index+1))
                         if current2 == "":
                             #print(f"Added {rect1_index+1} to {rect2_index+1}")
-                            self.table_widget.setItem(rect2_index, 4,
-                                                      QtWidgets.QTableWidgetItem(str(rect1_index+1)))
+                            self.table_widget.item(rect2_index, 4).setText(str(rect1_index+1))
                         else:
                             #print(f"Added {rect1_index+1} to {rect2_index+1}")
-                            self.table_widget.setItem(rect2_index, 4,
-                                                      QtWidgets.QTableWidgetItem(current2+","+str(rect1_index+1)))
+                            self.table_widget.item(rect2_index, 4).setText(current2+","+str(rect1_index+1))
+        
+        #https://stackoverflow.com/questions/33744111/how-to-set-qtreewidgetitem-as-not-editable
+        #here we make the color and overlap columns not editable
+        #this has to occur after any programmatic changes to their contents are made
+        #else it becomes editable again
+        for row_number in range(0, len(rectangles)):
+            overlap_item = self.table_widget.item(row_number, 4)
+            overlap_item.setFlags(overlap_item.flags() & ~QtCore.Qt.ItemIsEditable)
+            color_item = self.table_widget.item(row_number, 5)
+            color_item.setFlags(color_item.flags() & ~QtCore.Qt.ItemIsEditable)
+
         #i seriously doubt there's any need to have a live conversion of this table
         #will fix later
         #put in whatever gets connected to RectangleFinished
