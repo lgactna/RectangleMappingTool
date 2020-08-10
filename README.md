@@ -9,6 +9,7 @@ Its intended purpose for the AACT Telemetry project is to simplify the creation 
   - [Installation](#installation)
     - [Windows](#windows)
     - [Everywhere else](#everywhere-else)
+  - [A brief tutorial](#a-brief-tutorial)
   - [Features](#features)
     - [Rectangle drawing/artistic expression](#rectangle-drawingartistic-expression)
     - [Data representation](#data-representation)
@@ -20,7 +21,6 @@ Its intended purpose for the AACT Telemetry project is to simplify the creation 
       - [Additional info](#additional-info)
     - [F-string (like) export](#f-string-like-export)
     - [Customizability](#customizability)
-  - [A brief tutorial](#a-brief-tutorial)
   - [What's next?](#whats-next)
   - [Packaging](#packaging)
     - [On Python 3.8](#on-python-38)
@@ -49,6 +49,92 @@ Clone this repo to your working directory. In the terminal of your choice, execu
 If you choose to create a virtual environment with these two dependencies installed, ensure that you have activated the virtual environment beforehand.
 
 Please note that `drawex.py` (the original Scribble example) and `main copy.py` can be deleted - they are reference files that were not removed during development.
+
+
+
+## A brief tutorial
+
+This will show you how to use basic features of RMT.
+
+1. Load an image
+
+Go to `File > Open image...` or hit Ctrl+O. Pick an image of your choice.
+
+![Opening an image](docs/tutorial-1.png)
+
+2. Draw some rectangles
+
+Left-click on the canvas and drag to draw a rectangle. Draw a few more.
+
+![Drawing rectangles](docs/tutorial-2.png)
+
+*(Yes - this is am image of my Celeste save immediately after clearing the B-sides. It looked pretty and was the first image on my desktop lol)*
+
+3. Change the coordinates of a rectangle
+
+Double left-click on any cell in the first four columns (representing the coordinates) of any row in the table and edit the value. Observe how the rectangle's position changes as a result. (You may need to click away from the cell for the changes to take effect.)
+
+![Changing coordinates](docs/tutorial-3.gif)
+
+4. Change the color property of a rectangle (or a few...)
+
+Left-click and drag over some cells in the table to select them. Then, either right-click to reveal the context menu and click `Recolor` or click the `Change color` button above the table to show a color selection window. This will change the color of the rectangles associated with the rows (more accurately, the rows of the cells) you selected.
+
+![Changing rectangle colors](docs/tutorial-4-1.png)
+
+![Color selection window](docs/tutorial-4-2.png)
+
+5. Delete rectangles
+
+Again, select some cells in the table. Either right-click and click `Delete` or click the `Delete` button above the table. The associated rows and rectangles will disappear, and the rows below them will move up to take their place.
+
+![Delete rectangle selection (before)](docs/tutorial-5-1.png)
+
+![Delete rectangle selection (after)](docs/tutorial-5-2.png)
+
+6. Simple CSV export
+
+Go to the `Export Data` tab. There, click through the options above the `Export to .csv` button. Click either `Raw coordinates` or `All`, then click on `Export to .csv`. A save window should now appear, where you can choose where to save the CSV file. Hit `Save` once finished.
+
+Note: here, `All` was selected.
+
+![Simple CSV save prompt](docs/tutorial-6-1.png)
+
+Here's the output:
+
+![Output of simple CSV save](docs/tutorial-6-2.png)
+
+If successful, you should get the message "CSV saved!" There are few reasons this can fail, but you will get a maybe helpful error message as a result.
+
+7. Not simple CSV export
+
+Now, click on `Advanced Export`, right below the `Export to .csv` button. This will open a new window where you can reorder the items by clicking and dragging. Upon moving a column header/field to the left, you should see a preview of the result.
+
+Here's what that looks like in action:
+
+![Moving fields in advanced CSV export window](docs/tutorial-7.gif)
+
+You can then click on the `Export to .csv` button when you're finished, after which the same save dialog will appear.
+
+8. F-string export
+
+Finally, in the text box below the CSV stuff, type column header names enclosed in `{}` and write some other stuff next to it. Here, the following text was used:
+
+```
+A rectangle is at {x1}, {y1}, {x2}, {y2}
+It overlaps with {Overlaps with:}
+It's colored {Color (r,g,b)}
+```
+
+![F-string export input](docs/tutorial-8-1.png)
+
+Here's the output:
+
+![Output of f-string save](docs/tutorial-8-2.png)
+
+9. That's it!
+
+I know it's not much, but at least it works :thinking:
 
 ## Features
 
@@ -139,7 +225,7 @@ This function uses Python's built-in CSV library with the default settings for w
 - quotechar = '"'
 - and any other standard settings.
 
-You can also import coordinates and colors from a CSV file in the format `x1, y1, x2, y2, (ignored), color` - all coordinates are assumed to be pixel coordinates and are converted to `int`; colors are expected to be in the format `(r,g,b)` or say `Default`. Fields after color are ignored.
+You can also import coordinates and colors from a CSV file in the format `x1, y1, x2, y2, (ignored), color` - all coordinates are assumed to be pixel coordinates and are converted to `int`; colors are expected to be in the format `r,g,b` (note the lack of parentheses) or say `Default`. Fields after color are ignored.
 
 As implied by the inflexibility of the import function, it's really only meant to redraw rectangles already drawn by this program - this allows you to come back to a drawing and work on it later. In the future, perhaps it will figure out where `x1` is even if it's not the first field, or calculate the original conversion handles if `x1_conv` and its brothers are present. Right now, however, it's very basic and thus has little documentation devoted to it.
 
@@ -206,10 +292,6 @@ Defaults:
 - Crop large images/stretch small images disabled.
 
 Note that there is an unused setting `max_undo_actions`, which was intended to cap the amount of actions that could be undone via the undo function. As of now, undo simply deletes the most recently drawn rectangle.
-
-## A brief tutorial
-
-This will show you how to use basic features of RMT.
 
 ## What's next?
 As of August 2020, RMT runs on a single Python file (importing three different pyuic-generated .ui files). It's pretty clear that it wasn't designed with another developer in mind, and the current processes for generating the table, calculating/returning overlapping rectangles, and drawing the canvas are resource-taxing due to their redundant nature. Furthermore, there is little separation of business logic and the UI, making it incredibly difficult to maintain and extend. Future development should focus on separating these concerns and reducing ambiguity throughout the code (and attempt to find a fix for the rather taxing methods used for core functionality.)
