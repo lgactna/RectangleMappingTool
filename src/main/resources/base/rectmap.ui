@@ -64,7 +64,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <property name="sizePolicy">
@@ -572,8 +572,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>456</width>
-             <height>909</height>
+             <width>361</width>
+             <height>983</height>
             </rect>
            </property>
            <layout class="QFormLayout" name="formLayout_2">
